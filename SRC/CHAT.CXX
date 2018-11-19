@@ -116,7 +116,7 @@ serverloop()
 				break;
 			case IPX_TEXTMESSAGE:
 				 while ((data=rec[a]->data[ofs++])!=0)
-				  putch(data);
+				  putchar(data);
 				 printf("\n");
 				 break;
 			case IPX_END:
