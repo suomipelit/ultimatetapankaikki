@@ -5,8 +5,9 @@
 #include <math.h>
 #include <time.h> 
 #include <iostream>
-#include "keyb.h"
 
+#include "keyb.h"
+#include "graphics.h"
 #include "defines.h"
 #include "error/error.h"
 #include "efp/efp.h"
