@@ -1,15 +1,10 @@
 #include <stdarg.h> 
 #include <string.h> 
-#include <dos.h> 
-#include <stdio.h> 
-#include <conio.h> 
-#include <stdiobuf.h> 
-#include <stdlib.h> 
-#include <gfunc.h>
-#include <math.h> 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <time.h> 
 #include <iostream>
-#include <image.hpp> 
 #include "keyb.h"
 
 #include "defines.h"

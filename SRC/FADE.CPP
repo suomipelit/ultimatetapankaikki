@@ -1,5 +1,4 @@
 #include "globvar.h"
-#include <gfunc.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>

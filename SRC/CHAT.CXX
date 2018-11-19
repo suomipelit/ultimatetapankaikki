@@ -2,8 +2,6 @@
 
 #include "int.h"    // My asm header file..
 #include <stdio.h>
-#include <i86.h>
-#include <conio.h>
 #include <string.h>
 #include <iostream>
 

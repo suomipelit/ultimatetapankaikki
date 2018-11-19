@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <gfunc.h>
 #include "error/error.h"
 #include "defines.h"
 #include "globvar.h"
