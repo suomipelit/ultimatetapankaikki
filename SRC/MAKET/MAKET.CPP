@@ -3,7 +3,7 @@
 #include <string.h>
 #include <iostream>
 
-#include "efp.h"
+#include "efp/efp.h"
 #include "rgbhsl.h"
 
 class Light_table{

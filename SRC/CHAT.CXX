@@ -1,6 +1,6 @@
 #define IPXDEBUG
 
-#include "int.h"    // My asm header file..
+#include "int/int.h"    // My asm header file..
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
