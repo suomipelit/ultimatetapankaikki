@@ -250,8 +250,6 @@ void do_all()
 void free_all() 
 {
 	MIDASclose();
-	free( filelist );
-	free( dirlist );
 	freeipxmem();
 	k.deinit();
 }
