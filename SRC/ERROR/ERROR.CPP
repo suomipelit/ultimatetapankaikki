@@ -4,7 +4,8 @@
 #include "KEYB.H"
 
 void error(char *fmt,...)
-{	auto va_list ap;
+{
+    va_list ap;
 
 	// TODO VIDEO vesa_set_mode(0x3);
 
@@ -14,4 +15,3 @@ void error(char *fmt,...)
 
 	exit(1);
 }
-
