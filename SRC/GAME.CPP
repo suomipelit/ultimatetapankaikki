@@ -232,7 +232,7 @@ void do_all()
 	make_floors();
 	std::cout << "OK \n";
 	load_options();std::cout << "Options loaded\n";
-	list_files( &dirs, dirlist, "LEVS/*.*", _A_SUBDIR );
+	list_files( &dirs, dirlist, "LEVS/*", _A_SUBDIR );
 	std::cout << dirs << " episodes found\n";
 	list_files( &files_in_episode[0], filelist[0], "LEVS/*.LEV", _A_NORMAL );
 	for ( a = 0; a < dirs &&a < 256; a ++  ) 
