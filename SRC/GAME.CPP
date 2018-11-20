@@ -536,7 +536,7 @@ void animate_enemies()
 }
 
 void quiti() 
-{	char *quitstr="REALLY WANNA QUIT ? (y)";
+{	const char *quitstr="REALLY WANNA QUIT ? (y)";
 	int a, x = 160 - ( str_length( quitstr )  / 2 );
 	clock_t time;
 	for ( a = 0; a < 12; a ++  ) 

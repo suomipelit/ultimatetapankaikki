@@ -1,4 +1,4 @@
-char *quitexts[] = 
+const char *quitexts[] = 
 {
 	"no: let's kill !", 
 	"yes: i'm a loser"

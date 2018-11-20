@@ -508,7 +508,7 @@ void explo( int x, int y, int size, int index )
 	MIDASplaySample( samplep[EXPLOWAV], MIDAS_CHANNEL_AUTO, 0, 14000 - ( size*1000 ), EFFECT_VOLUME, 0 );
 }
 
-void list_files( int *no, vile *filelist, char *wildcard, int type ) 
+void list_files( int *no, vile *filelist, const char *wildcard, int type ) 
 {
 	/* TODO FILESYSTEM
 	struct find_t fbuf;

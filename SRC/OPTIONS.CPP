@@ -183,7 +183,7 @@ int choose_episode()
 	return( sel );
 }
 
-void options_scr( int opt, char *filename ) 
+void options_scr( int opt, const char *filename ) 
 {
 	load_efp( filename, picture, 0 );
 	load_efp_pal( "EFPS/WARE.EFP", pal );
@@ -191,7 +191,7 @@ void options_scr( int opt, char *filename )
 	first = 1;
 }
 
-void multip_options_scr( int opt, char *filename ) 
+void multip_options_scr( int opt, const char *filename ) 
 {
 	load_efp( filename, picture, 0 );
 	load_efp_pal( "EFPS/WARE.EFP", pal );

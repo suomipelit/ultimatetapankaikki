@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include "KEYB.H"
 
-void error(char *fmt,...)
+void error(const char *fmt,...)
 {
     va_list ap;
 
