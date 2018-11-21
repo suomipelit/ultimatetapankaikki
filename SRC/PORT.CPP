@@ -1,6 +1,5 @@
 #define _PORT_IMPL
 
-#include <SDL.h>
 #include "PORT.H"
 #include "GLOBVAR.H"
 
@@ -38,6 +37,15 @@ int tk_port_init( void )
 	if ( SDL_Init(SDL_INIT_EVERYTHING) != 0 )
 	{
 		SDL_Log( "Error initializing SDL:  %s", SDL_GetError());
+		return 1;
+	}
+	if ( Mix_Init(MIX_INIT_MOD) & MIX_INIT_MOD != MIX_INIT_MOD )
+	{
+		SDL_Log( "Error initializing SDL_mixer:  %s", Mix_GetError());
+		return 1;
+	}
+	if( Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) == -1 ) {
+		printf( "Error initializing mixer API: %s\n", Mix_GetError() );
 		return 1;
 	}
 
@@ -115,6 +123,8 @@ static void tk_port_screen_test()
 
 void tk_port_exit( void )
 {
+	Mix_CloseAudio();
+	Mix_Quit();
 	SDL_Quit();
 }
 
@@ -282,4 +292,32 @@ double tk_port_debug_wallclock()
 {
 	uint64_t nsec_time = tk_port_nanoclock();
 	return nsec_time / (double) TK_PORT_NSEC_PER_SEC;
+}
+
+Mix_Music *tk_port_load_music(const char *path)
+{
+	Mix_Music *result = Mix_LoadMUS(path);
+	if (!result) {
+		SDL_Log( "Error loading music file %s:  %s", path, Mix_GetError());
+		return NULL;
+	}
+	return result;
+}
+
+/**
+ * Play the given music until stopped.
+ * @return 0 on success, 1 on error
+ */
+int tk_port_play_music(Mix_Music *music)
+{
+	if (Mix_PlayMusic(music, -1) != 0) {
+		SDL_Log( "Error playing music:  %s", Mix_GetError());
+		return 1;
+	}
+	return 0;
+}
+
+void tk_port_stop_music()
+{
+	Mix_HaltMusic();
 }

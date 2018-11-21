@@ -1,3 +1,4 @@
+#include <SDL_mixer.h>
 #include "DEFINES.H"
 #include "IPXDEFS.H"
 #include "TYPES.H"
@@ -169,9 +170,8 @@ int normal_crate_amount;
 int deathmatch_crate_amount;
 
 MIDASsample samplep[DIFF_WAVS+1];
- 
-MIDASmodule biisi[6];
-MIDASmodulePlayHandle ph;
+
+Mix_Music *biisi[6];
 int sample_rates[DIFF_WEAPONS + 1] = 
 {
 	10000, // nyrkki

@@ -44,24 +44,16 @@ unsigned short sendl, sendseg, recl[RECEIVERS], recseg[RECEIVERS];
 
 void menu_biisi() 
 {
-	if ( ph ) MIDASstopModule( ph );
-	ph = MIDASplayModule( biisi[0], TRUE );
-	MIDASsetMusicVolume( ph, MUSIC_VOLUME );
+    tk_port_play_music(biisi[0]);
 }
 
-void peli_biisi() 
-{	
-	static int biisi_count=0;
-
-	if ( ph ) MIDASstopModule( ph );
-	if (biisi[biisi_count+1]==NULL) {
-		warn("peli_biisi():biisi[biisi_count+1]==NULL!!!\nbiisi_count: %d\n", biisi_count);
-		return;
-	}
-	ph = MIDASplayModule( biisi[biisi_count+1], TRUE );
-	MIDASsetMusicVolume( ph, MUSIC_VOLUME );
-	biisi_count++;
-	biisi_count%= 5;
+void peli_biisi()
+{
+	static int biisi_count = 0;
+	if (tk_port_play_music(biisi[biisi_count + 1]) == 0) {
+        biisi_count++;
+        biisi_count %= 5;
+    }
 }
 
 void prevr( void )
@@ -181,21 +173,19 @@ void do_all()
 		samplep[WOOSHWAV] = MIDASloadWaveSample( "WAVS/WOOSH.WAV", FALSE );putchar('.');
 		samplep[FLAMEWAV] = MIDASloadWaveSample( "WAVS/FLAME.WAV", FALSE );putchar('.');
 		std::cout << "\nLoading musics";fflush(stdout);
-		biisi[0] = MIDASloadModule("MUSIC/MENU.S3M");putchar('.');
-		biisi[1] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-		biisi[2] = MIDASloadModule("MUSIC/MIELIP2.S3M");putchar('.');
-		biisi[3] = MIDASloadModule("MUSIC/MIELIP2.S3M");putchar('.');
-		biisi[4] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-		biisi[5] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-//		biisi[2] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-//		biisi[3] = MIDASloadModule("MUSIC/UNIC_3X.S3M");putchar('.');
-//		biisi[4] = MIDASloadModule("MUSIC/MIELIP2.S3M");putchar('.');
-//		biisi[5] = MIDASloadModule("MUSIC/UNIC_2X.S3M");putchar('.');
-//		biisi[1] = MIDASloadModule("MUSIC/UNIC_1X.S3M");putchar('.');
-		/* TODO SOUND
+		biisi[0] = tk_port_load_music("MUSIC/MENU.S3M");putchar('.');
+		biisi[1] = tk_port_load_music("MUSIC/BACK.S3M");putchar('.');
+		biisi[2] = tk_port_load_music("MUSIC/MIELIP2.S3M");putchar('.');
+		biisi[3] = tk_port_load_music("MUSIC/MIELIP2.S3M");putchar('.');
+		biisi[4] = tk_port_load_music("MUSIC/BACK.S3M");putchar('.');
+		biisi[5] = tk_port_load_music("MUSIC/BACK.S3M");putchar('.');
+//		biisi[2] = tk_port_load_music("MUSIC/BACK.S3M");putchar('.');
+//		biisi[3] = tk_port_load_music("MUSIC/UNIC_3X.S3M");putchar('.');
+//		biisi[4] = tk_port_load_music("MUSIC/MIELIP2.S3M");putchar('.');
+//		biisi[5] = tk_port_load_music("MUSIC/UNIC_2X.S3M");putchar('.');
+//		biisi[1] = tk_port_load_music("MUSIC/UNIC_1X.S3M");putchar('.');
     	for (a=0;a<6;a++)
 		 if (biisi[a]==NULL) error("Musicmodule #%d NULL!\n",a);
-		*/
 		std::cout << std::endl;
 	}
 	else error( "Error in MIDAS startup !!!\n" );
@@ -2421,7 +2411,6 @@ void menu()
 {
 	int a, cnt = 0, selected = 0, quit = 0, oclock;
 	int starty = ( Menu_texts*15 )  / 2;
-	ph = 0;
 	menu_scr();
 	menu_biisi();
 	while( !quit ) 
@@ -2597,7 +2586,7 @@ int main( int argc, char *argv[] )
 	if ( pause ) k.getch();
 	logo();
 	menu();
-	if ( ph ) MIDASstopModule( ph );
+	tk_port_stop_music();
 	free_all();
 	tk_port_exit();
 //	credits();

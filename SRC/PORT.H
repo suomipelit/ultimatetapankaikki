@@ -1,6 +1,9 @@
 #ifndef _PORT_H
 #define _PORT_H
 
+#include <SDL.h>
+#include <SDL_mixer.h>
+
 // DJGPP's time.h defines CLOCKS_PER_SEC as 91,
 // openwatcom (https://github.com/open-watcom/owp4v1copy/blob/master/bld/hdr/watcom/time.mh#L94)
 // defines it as 1000.
@@ -33,6 +36,10 @@ void tk_port_sleep(int msec);
 int tk_port_vintage_clock();
 
 double tk_port_debug_wallclock();
+
+Mix_Music *tk_port_load_music(const char *path);
+int tk_port_play_music(Mix_Music *music);
+void tk_port_stop_music();
 
 extern bool tk_port_quit_flag;
 
