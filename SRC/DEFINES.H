@@ -1,6 +1,6 @@
 #ifndef __TK__DEFINES__
 #define __TK__DEFINES__
-#define Version "v1.2 beta"
+#define Version "Original v1.2 beta"
 #define pi 3.14159265358979
 #define CRATE_WAKE_UP_COUNT 500 // = 12.5 secs if 40 frames per sec
 #define MESSAGE_TIME_ON_SCREEN 200  // = 5 secs if 40 frames per sec
@@ -35,6 +35,7 @@
 #define M_BLUE 113 // punainen
 #define M_RED 64 // sinertävä
 #define M_YELLOW 144 // keltainen
+#define M_GRAY 85 // harmaa
 #define TIME_ADD 1.1 // action time'll be multiplied with this
 #define LIGHTS 10
 #define TARGET_FRAMES 40 // framerate

@@ -33,3 +33,20 @@ target_link_libraries(tk3 ${SDL2_LIBRARY} ${SDL2_MIXER_LIBRARIES})
 #file(GLOB MAKET_SOURCES TOOLS/MAKET/*.H TOOLS/MAKET/*.CPP SRC/RGBHSL.H SRC/RGBHSL.CPP SRC/EFP/*.H SRC/EFP/*.CPP SRC/ERROR/*.H SRC/ERROR/*.CPP)
 #add_executable(maket ${MAKET_SOURCES})
 #target_include_directories(tk3 SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/SRC)
+
+find_program(GIT git)
+if (GIT)
+	execute_process(COMMAND ${GIT} config --get remote.origin.url
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		OUTPUT_VARIABLE REPO_ADDRESS)
+	execute_process(COMMAND ${GIT} rev-parse --abbrev-ref HEAD
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		OUTPUT_VARIABLE BRANCH_NAME)
+	execute_process(COMMAND ${GIT} rev-parse --short HEAD
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		OUTPUT_VARIABLE COMMIT_HASH)
+	target_compile_definitions(tk3 PRIVATE
+		REPO_ADDRESS=\"${REPO_ADDRESS}\"
+		BRANCH_NAME=\"${BRANCH_NAME}\"
+		COMMIT_HASH=\"${COMMIT_HASH}\")
+endif()

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <ctime>
 #include <iostream>
+#include <string>
 
 #include "KEYB.H"
 #include "GRAPHICS.H"
@@ -2468,7 +2469,30 @@ void menu()
     {
         memcpy( virbuff, picture, 64000 );
         FONT_NUM = 1;
-        writefonts( 320 - str_length( Version ), 190, Version, M_BLUE );
+
+        std::string additionalInfo;
+#if defined(REPO_ADDRESS)
+        additionalInfo += REPO_ADDRESS;
+#if defined(BRANCH_NAME)
+        additionalInfo += " (";
+        additionalInfo += BRANCH_NAME;
+        additionalInfo += ")";
+#if defined(COMMIT_HASH)
+        additionalInfo += " ";
+        additionalInfo += COMMIT_HASH;
+#endif
+#endif
+#endif
+        // Move original version up for a row in case there is additional info below it
+        const int side_margin = 2;
+        const int row_height = 10;
+        writefonts( 320 - str_length( Version ) - side_margin, 190 - ( additionalInfo.empty() ? 0 : row_height ), Version, M_BLUE );
+
+        if ( !additionalInfo.empty() )
+        {
+            writefonts( 320 - str_length( additionalInfo.c_str() ) - side_margin, 190, additionalInfo.c_str(), M_GRAY );
+        }
+
         for ( a = 0; a < Menu_texts; a ++  )
         {
             if ( a == selected )
