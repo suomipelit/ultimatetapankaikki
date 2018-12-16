@@ -1392,6 +1392,9 @@ void desetup_ipx()
     flushipx();
     if ((GAME_MODE==NETWORK)&&(NETWORK_MODE==SERVER))
         sendipxnow(&n,IPX_SERVERSHUTDOWN);
+    // Wait a while before closing sockets so that
+    // clients have time to react to SERVERSHUTDOWN
+    tk_port_sleep(50);
     Net::close_connections();
 }
 
@@ -1437,7 +1440,7 @@ void do_server_shit()
     Net::accept_connections();
 
     for ( a = 0; a < RECEIVERS; a ++  )
-    if ( Net::receive(rec[a], a) )
+    if ( Net::receive(rec[a]) )
     {
         data =  - 1;
         ofs = 0;
@@ -1711,7 +1714,7 @@ void do_client_shit()
     int pl;
 
     for ( a = 0; a < RECEIVERS; a ++  )
-    if ( Net::receive(rec[a], a) )
+    if ( Net::receive(rec[a]) )
     {
         data =  - 1;
         ofs = 0;
@@ -1886,7 +1889,7 @@ int realjoin()
         {
             if (k.state[1]) return 0;
             for ( a = 0; a < RECEIVERS; a ++  )
-            if ( Net::receive(rec[a], a) )
+            if ( Net::receive(rec[a]) )
             {
                 data =  - 1;
                 ofs = 0;
@@ -1905,7 +1908,7 @@ int realjoin()
                         }
                         if (!aplayer[0]->enabled) message_board.add_message((char*)"realjoin: something missing...");
                         received=1;
-                        if (rec[a]->data[ofs+1]!=IPX_END) error("realjoin: IPX packet mismatching!");
+                        if (rec[a]->data[ofs]!=IPX_END) error("realjoin: IPX packet mismatching!");
 
                         break;
                         default:ofs+=IPXMSGLEN[data]-1;
@@ -1944,7 +1947,7 @@ int getlevel()
         {
             if (k.state[1]) return 0;
             for ( a = 0; a < RECEIVERS; a ++  )
-            if ( Net::receive(rec[a], a) )
+            if ( Net::receive(rec[a]) )
             {
                 data =  - 1;
                 ofs = 0;
@@ -1990,7 +1993,7 @@ int getlevelinfo()
         {
             if (k.state[1]) return 0;
             for ( a = 0; a < RECEIVERS; a ++  )
-            if ( Net::receive(rec[a], a) )
+            if ( Net::receive(rec[a]) )
             {
                 data =  - 1;
                 ofs = 0;
@@ -2061,7 +2064,7 @@ int waitfor(int msg,int secs)
     while ((!timeout)&&(yes!=0))
     {
         for ( a = 0; a < RECEIVERS; a ++  )
-        if ( Net::receive(rec[a], a) )
+        if ( Net::receive(rec[a]) )
         {
             data =  - 1;
             ofs = 0;
@@ -2167,7 +2170,7 @@ int select_server()
         sendipxnow(&bc,IPX_SERVERSEARCH);
 
         for ( a = 0; a < RECEIVERS; a ++  )
-        if ( Net::receive(rec[a], a) )
+        if ( Net::receive(rec[a]) )
         {
             data =  - 1;
             ofs = 0;
@@ -2424,11 +2427,6 @@ void game()
                     }
                     framecount = 0;// incremented by MIDAS timer
                     game_shit();// do the game !!!!
-                    Steam_count ++;
-                    Steam_count%= 360;
-                    Spot_count += 2;
-                    Spot_count%= 360;
-                    frame_count ++;
 
                     if ( GAME_MODE == NETWORK )
                     {
@@ -2445,6 +2443,12 @@ void game()
                             error( "Invalid network mode" );
                         }
                     }
+
+                    Steam_count ++;
+                    Steam_count%= 360;
+                    Spot_count += 2;
+                    Spot_count%= 360;
+                    frame_count ++;
                 }
                 tk_port_event_tick();
             }  // game loop end
