@@ -1,5 +1,6 @@
 #define _PORT_IMPL
 
+#include <map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,12 @@ static SDL_Surface *surface;
 static SDL_Palette *palette;
 bool tk_port_quit_flag = false;
 uint32_t tk_port_debug = 0;
+
+#define SYMBOL_KEY_REPEAT_START 500
+#define SYMBOL_KEY_REPEAT_INTERVAL 20
+
+// scancode -> ( last_repeat_ms, num_repeats )
+static std::map< SDL_Scancode, std::pair< uint32_t, int > > key_repeats;
 
 static uint64_t timer_zero;
 #define TK_PORT_NSEC_PER_SEC 1000000000L
@@ -132,7 +139,7 @@ static uint8_t tk_port_remap_key( SDL_Keycode keycode )
     return keycode & 0xFF;
 }
 
-static uint8_t tk_port_get_scancode_index( SDL_Keycode keycode, SDL_Scancode scancode )
+static int tk_port_get_symbol_scancode_index( SDL_Scancode scancode )
 {
     switch (scancode)
     {
@@ -151,7 +158,21 @@ static uint8_t tk_port_get_scancode_index( SDL_Keycode keycode, SDL_Scancode sca
         case SDL_SCANCODE_RALT:
             return 92;
         default:
-            break;
+            return -1;
+    }
+}
+
+static bool tk_port_is_symbol_key( SDL_Scancode scancode )
+{
+    return tk_port_get_symbol_scancode_index( scancode) != -1;
+}
+
+static uint8_t tk_port_get_scancode_index( SDL_Keycode keycode, SDL_Scancode scancode )
+{
+    int symbol_index = tk_port_get_symbol_scancode_index( scancode );
+    if ( symbol_index != -1)
+    {
+        return symbol_index;
     }
 
     if ( keycode >= 'a' && keycode <= 'z' )
@@ -196,9 +217,52 @@ static uint8_t tk_port_get_scancode_index( SDL_Keycode keycode, SDL_Scancode sca
     }
 }
 
+static void tk_port_synthetize_key_repeats()
+{
+    uint32_t now = SDL_GetTicks();
+
+    for ( auto &it : key_repeats )
+    {
+        SDL_Scancode scancode = it.first;
+        uint32_t last_repeat_ms = it.second.first;
+        int num_repeats = it.second.second;
+
+        uint32_t elapsed = now - last_repeat_ms;
+        if ( ( num_repeats == 0 && elapsed >= SYMBOL_KEY_REPEAT_START ) ||
+             ( num_repeats > 0 && elapsed >= SYMBOL_KEY_REPEAT_INTERVAL ) )
+        {
+            SDL_Event event;
+            event.type = SDL_KEYDOWN;
+            event.key.timestamp = now;
+            event.key.repeat = 1;
+            event.key.keysym.scancode = scancode;
+            SDL_PushEvent( &event );
+
+            it.second.first = now;
+            it.second.second = num_repeats + 1;
+        }
+    }
+}
+
+static void tk_port_init_key_repeat( SDL_Scancode scancode )
+{
+    uint32_t now = SDL_GetTicks();
+    if ( key_repeats.find( scancode ) == key_repeats.end() )
+    {
+        key_repeats.insert( std::pair< SDL_Scancode, std::pair< uint32_t, int > >( scancode, std::pair< uint32_t, int >( now, 0 ) ) );
+    }
+}
+
+static void tk_port_cancel_key_repeat( SDL_Scancode scancode )
+{
+    key_repeats.erase( scancode );
+}
+
 void tk_port_event_tick( void )
 {
     SDL_Event e;
+    tk_port_synthetize_key_repeats();
+
     while (SDL_PollEvent( &e ))
     {
         switch (e.type)
@@ -230,6 +294,14 @@ void tk_port_event_tick( void )
                     }
                     k._last_getch = tk_key;
                     k._kbhit_flag = true;
+
+                }
+                if ( !e.key.repeat && tk_port_is_symbol_key( e.key.keysym.scancode ) )
+                {
+                    if (down)
+                        tk_port_init_key_repeat( e.key.keysym.scancode );
+                    else
+                        tk_port_cancel_key_repeat( e.key.keysym.scancode );
                 }
             }
                 break;
