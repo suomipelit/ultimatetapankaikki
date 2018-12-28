@@ -207,9 +207,25 @@ void deinit()
     SDL_Quit();
 }
 
-uint8_t remap_key( SDL_Keycode keycode )
+bool is_string_input_key( SDL_Keycode keycode, uint8_t& rOut )
 {
-    return keycode & 0xFF;
+    if ( ( keycode >= SDLK_a && keycode <= SDLK_z ) ||
+        ( keycode >= SDLK_0 && keycode <= SDLK_9 ) ||
+        keycode == SDLK_PERIOD ||
+        keycode == SDLK_RETURN ||
+        keycode == SDLK_KP_ENTER ||
+        keycode == SDLK_RETURN2 ||
+        keycode == SDLK_SPACE ||
+        keycode == SDLK_BACKSPACE ||
+        keycode == SDLK_ESCAPE )
+    {
+        rOut = keycode & 0xFF;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 uint8_t get_scancode_index( SDL_Keycode keycode, SDL_Scancode scancode )
@@ -316,13 +332,20 @@ void event_tick( void )
 
                 if ( down )
                 {
-                    const uint8_t tk_key = remap_key( e.key.keysym.sym );
+                    uint8_t tk_key;
+                    const bool is_string_key = is_string_input_key( e.key.keysym.sym, tk_key );
 
-                    if ( debug )
+                    if ( is_string_key )
                     {
-                        printf( "key down: %04x (tk = %d)\n", e.key.keysym.scancode, tk_key );
+                        if ( debug )
+                        {
+                            printf( "key down: %04x (tk = %d)\n", e.key.keysym.scancode, tk_key );
+                        }
+
+                        k._last_getch = tk_key;
+                        k._getchhit_flag = true;
                     }
-                    k._last_getch = tk_key;
+
                     k._kbhit_flag = true;
                 }
             }

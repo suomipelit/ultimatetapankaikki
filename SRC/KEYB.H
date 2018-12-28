@@ -22,10 +22,12 @@ struct KeyboardHandler
             state[i] = 0;
         }
         _kbhit_flag = 0;
+        _getchhit_flag = 0;
         _last_getch = 0;
     }
 
     int _kbhit_flag;
+    int _getchhit_flag;
     int _last_getch;
 
     int kbhit()
@@ -40,10 +42,11 @@ struct KeyboardHandler
 
     int getch()
     {
-        while (!kbhit())
+        while ( !_getchhit_flag )
         {
             tk_port::event_tick();
         }
+        _getchhit_flag = 0;
         return _last_getch;
     }
 
