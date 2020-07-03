@@ -459,6 +459,11 @@ void toggle_fullscreen()
     window_resized = true;
 }
 
+uint32_t get_time_ms()
+{
+    return SDL_GetTicks();
+}
+
 /**
  * Return the wallclock time vintage_clock() is derived off.
  * @return

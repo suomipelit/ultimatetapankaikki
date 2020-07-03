@@ -88,4 +88,7 @@
 #define WOOSHWAV 9
 #define FLAMEWAV 10
 
+#define KEEPALIVE_INTERVAL_MS 1000
+#define KEEPALIVE_TIMEOUT_MS 3000
+
 #endif

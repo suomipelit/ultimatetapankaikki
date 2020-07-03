@@ -3,6 +3,7 @@
 #include "TYPES.H"
 #include "CLASSES.H"
 #include <ctime>
+#include <cstdint>
 #include "INPUT/KEYB.H"
 #include "SOUND.H"
 #include "PORT_TEXT.H"
@@ -439,3 +440,4 @@ vile filelist[256][1024];
 vile dirlist[256];
 int files_in_episode[256];
 int dirs = 0;
+uint32_t client_keep_alive_time_ms = 0;

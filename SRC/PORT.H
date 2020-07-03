@@ -42,6 +42,8 @@ int vintage_clock( void );
 
 void toggle_fullscreen( void );
 
+uint32_t get_time_ms();
+
 extern bool quit_flag;
 extern uint32_t debug;
 }

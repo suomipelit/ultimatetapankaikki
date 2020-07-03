@@ -1396,7 +1396,7 @@ void server_add_player(char *name,struct nodeaddr *n)
     player[a].player_kills=0;
     player[a].color=colors[a];
     player[a].death_match_start_up();
-    player[a].time_since_last_alive=0;
+    player[a].time_since_last_alive=tk_port::get_time_ms();
 
     sendipxnow(n,IPX_GAMEDATA,(int)a);
     for (b=1;b<MAX_PLAYERS;b++)
@@ -1434,7 +1434,7 @@ void do_server_shit()
                 pcom[pcoms++]=data;
                 pl=rec[a]->data[ofs++];
                 player[pl].enabled=1;
-                player[pl].time_since_last_alive=0;
+                player[pl].time_since_last_alive=tk_port::get_time_ms();
                 break;
 
                 case IPX_MESSAGE:
@@ -1850,7 +1850,13 @@ void do_client_shit()
             };
         }
     }
-    sendipx(0,IPX_ALIVE);
+
+    const uint32_t time_now_ms = tk_port::get_time_ms();
+    if (time_now_ms - client_keep_alive_time_ms >= KEEPALIVE_INTERVAL_MS)
+    {
+        client_keep_alive_time_ms = time_now_ms;
+        sendipx(0, IPX_ALIVE);
+    }
     flushipx();
 }
 
@@ -2220,7 +2226,7 @@ void chk_for_loosers()
 
     for (a=1;a<MAX_PLAYERS;a++)
      if (player[a].enabled)
-      if (player[a].time_since_last_alive++>=40*3)
+      if (tk_port::get_time_ms() - player[a].time_since_last_alive >= KEEPALIVE_TIMEOUT_MS)
        {
         player[a].enabled=0;
         sprintf(message,"%s (%d) left the game",player[a].name,player[a].tindex);
@@ -2413,23 +2419,6 @@ void game()
                     OVER_POWER = ( op[0] + op[1] + op[2] + op[3] + op[4] ) / op_table_size;
                     }
                     framecount = 0;// incremented by MIDAS timer
-
-                    if ( GAME_MODE == NETWORK )
-                    {
-                        switch ( NETWORK_MODE )
-                        {
-                        case CLIENT:
-                            do_client_shit();
-                            break;
-                        case SERVER:
-                            chk_for_loosers();
-                            do_server_shit();
-                            break;
-                        default:
-                            error( "Invalid network mode" );
-                        }
-                    }
-
                     game_shit();// do the game !!!!
 
                     Steam_count ++;
@@ -2443,6 +2432,22 @@ void game()
                 {
                     // No need to draw screen, just poll events
                     tk_port::event_tick( false );
+                }
+
+                if (GAME_MODE == NETWORK)
+                {
+                    switch (NETWORK_MODE)
+                    {
+                    case CLIENT:
+                        do_client_shit();
+                        break;
+                    case SERVER:
+                        chk_for_loosers();
+                        do_server_shit();
+                        break;
+                    default:
+                        error("Invalid network mode");
+                    }
                 }
 
                 if ( tk_port::quit_flag )
