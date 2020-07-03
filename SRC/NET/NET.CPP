@@ -6,24 +6,18 @@
 #include "../ERROR/ERROR.H"
 #include "NETDEFS.H"
 #include "DEFINES.H"
-#include "SDL_net.h"
+#include "TRANSPORT/TRANSPORT.H"
 #include "PORT.H"
 
 #include <algorithm>
-#include <iterator>
 #include <vector>
-
 
 namespace
 {
-// Add few extra sockets in case clients try to join when server is full. Game
+// Add few extra storages in case clients try to join when server is full. Game
 // logic rejects such join attempts
-static const int NUMBER_OF_SOCKETS = MAX_PLAYERS + 3;
-
-static TCPsocket server_socket;
-static SDLNet_SocketSet set;
-static std::vector<TCPsocket> sockets(NUMBER_OF_SOCKETS, nullptr);
-static std::vector<std::vector<char>> socket_storages(NUMBER_OF_SOCKETS);
+static const int NUMBER_OF_STORAGES = MAX_PLAYERS + 3;
+static std::vector<std::vector<char>> storages(NUMBER_OF_STORAGES);
 
 static const int PACKET_HEADER_SIZE = 2; // 2 length bytes (16-bit) at the beginning
 static const int PACKET_CHECKSUM_SIZE = 1; // 1 checksum byte at the and
@@ -41,146 +35,55 @@ bool init()
     // Raw TCP is not working in browser environment - WebRTC port would be needed
     return false;
 #else
-    if (SDLNet_Init() == -1)
-    {
-        printf("Error initializing net API: %s\n", SDLNet_GetError());
-        return false;
-    }
-
-    set = SDLNet_AllocSocketSet(NUMBER_OF_SOCKETS);
-
-    if (!set)
-    {
-        printf("Error allocating socket set: %s\n", SDLNet_GetError());
-        return false;
-    }
-
-    return true;
+    return transport::init(NUMBER_OF_STORAGES, MAXDATASIZE);
 #endif
 }
 
 void deinit()
 {
-    if (set)
-    {
-        SDLNet_FreeSocketSet(set);
-        set = NULL;
-    }
-
-    SDLNet_Quit();
+    transport::deinit();
 }
 
 int create_server(const unsigned int port)
 {
-    IPaddress ip;
-
-    if (SDLNet_ResolveHost(&ip, NULL, port) == -1)
-    {
-        printf("Error resolving host: %s\n", SDLNet_GetError());
-        return 1;
-    }
-
-    server_socket = SDLNet_TCP_Open(&ip);
-
-    if (server_socket == NULL)
-    {
-        printf("Error opening socket: %s\n", SDLNet_GetError());
-        return 2;
-    }
-
-    return 0;
+    return transport::server::create_server(port);
 }
 
 int connect_server(const char* server_address, const unsigned int port)
 {
-    IPaddress ip;
-
-    if (SDLNet_ResolveHost(&ip, server_address, port) == -1)
-    {
-        printf("Error resolving host: %s\n", SDLNet_GetError());
-        return 1;
-    }
-
-    TCPsocket socket = SDLNet_TCP_Open(&ip);
-
-    if (!socket)
-    {
-        printf("Error opening socket: %s\n", SDLNet_GetError());
-        return 2;
-    }
-
-    // Client always has just one socket to server
-    sockets[0] = socket;
-    SDLNet_TCP_AddSocket(set, socket);
-
-    return 0;
+    return transport::client::connect_to_server(server_address, port);
 }
 
 void close_connections()
 {
-    if (server_socket)
-    {
-        SDLNet_TCP_Close(server_socket);
-        server_socket = NULL;
-    }
-
-    for (auto socket : sockets)
-    {
-        if (socket != nullptr)
-        {
-            SDLNet_TCP_DelSocket(set, socket);
-            SDLNet_TCP_Close(socket);
-        }
-    }
-
-    std::fill(sockets.begin(), sockets.end(), nullptr);
-
-    for (auto& storage : socket_storages)
+    for (auto& storage : storages)
     {
         storage.clear();
     }
+
+    return transport::close_connections();
 }
 
 void accept_connections()
 {
-    TCPsocket newClient = SDLNet_TCP_Accept(server_socket);
-
-    if (newClient)
-    {
-        auto empty_slot = std::find(sockets.begin(), sockets.end(), nullptr);
-
-        if (empty_slot != sockets.end())
-        {
-            *empty_slot = newClient;
-            SDLNet_TCP_AddSocket(set, newClient);
-        }
-        else
-        {
-            SDLNet_TCP_Close(newClient);
-            printf("Out of sockets\n");
-        }
-    }
+    return transport::server::accept_connections();
 }
 
 bool active_connections_exist()
 {
-    const auto doesSocketExist = [](const TCPsocket& socket) {
-        return socket != nullptr;
-    };
-
-    // Find if there exists one or more active sockets
-    return std::find_if(sockets.begin(), sockets.end(), doesSocketExist) != sockets.end();
+    return transport::is_connected();
 }
 
 static void disconnect(const unsigned int index)
 {
-    // Disconnect is not propagated up but server
-    // relies on ALIVE keep-alive messages. It
-    // then propagates disconnects to clients with
+    // Disconnect is not propagated to game logic but
+    // server relies on ALIVE messages. It then propagates
+    // disconnects to clients with
     // PLAYERDISCONNECTED message.
-    SDLNet_TCP_DelSocket(set, sockets[index]);
-    sockets[index] = nullptr;
-    socket_storages[index].clear();
+
+    storages[index].clear();
+
+    return transport::disconnect(index);
 }
 
 // Very simple checksum for packet sanity check
@@ -214,37 +117,30 @@ static int get_payload_length(const char* data)
 
 static void receive_to_storage(const unsigned int index)
 {
-    if (index >= sockets.size() || sockets[index] == nullptr) return;
+    const auto received = transport::receive(index);
 
-    if (SDLNet_CheckSockets(set, 0))
+    switch (received.status)
     {
-        if (SDLNet_SocketReady(sockets[index]))
-        {
-            char data[MAXDATASIZE + PACKET_OVERHEAD_SIZE];
-            const int len = SDLNet_TCP_Recv(sockets[index], data, MAXDATASIZE);
-
-            if (len > 0)
-            {
-                auto& buffer = socket_storages[index];
-                for (int i = 0; i < len; ++i)
-                {
-                    buffer.push_back(data[i]);
-                }
-            }
-            else
-            {
-                disconnect(index);
-            }
-        }
+    case transport::NEW_DATA:
+    {
+        auto& storage = storages[index];
+        storage.insert(storage.end(), received.buffer.begin(), received.buffer.end());
+        break;
+    }
+    case transport::DISCONNECTED:
+        disconnect(index);
+        break;
+    default:
+        break;
     }
 }
 
 static bool find_next_packet_from_storage(struct packet *buffer)
 {
     // Clients always have just one socket to server
-    for (unsigned int i = 0; i < (server_socket ? socket_storages.size() : 1); ++i)
+    for (unsigned int i = 0; i < (transport::is_server() ? storages.size() : 1); ++i)
     {
-        auto& storage = socket_storages[i];
+        auto& storage = storages[i];
 
         // Check if there is enough data for packet consisting
         // of 1 or more payload bytes
@@ -252,7 +148,7 @@ static bool find_next_packet_from_storage(struct packet *buffer)
         {
             const unsigned int payload_length = get_payload_length(storage.data());
 
-            if (storage.size() < payload_length + PACKET_OVERHEAD_SIZE)
+            if (storage.size() < (payload_length + PACKET_OVERHEAD_SIZE))
             {
                 // Not enough data in the storage, i.e. packet not yet fully received
                 continue;
@@ -283,13 +179,13 @@ static bool find_next_packet_from_storage(struct packet *buffer)
     return false;
 }
 
-static unsigned int get_next_socket_to_receive()
+static unsigned int get_next_storage_to_receive()
 {
-    if (server_socket)
+    if (transport::is_server())
     {
-        static unsigned int socket_index = 0;
-        // Loops 0 to NUMBER_OF_SOCKETS - 1
-        return socket_index++ % NUMBER_OF_SOCKETS;
+        static unsigned int storage_index = 0;
+        // Loops 0 to NUMBER_OF_STORAGES - 1
+        return storage_index++ % NUMBER_OF_STORAGES;
     }
     else
     {
@@ -301,7 +197,7 @@ bool receive(struct packet *buffer)
 {
     // Receive data evenly from sockets and store any received
     // data to storage
-    receive_to_storage(get_next_socket_to_receive());
+    receive_to_storage(get_next_storage_to_receive());
 
     // Look through the socket storages to see if there are
     // any fully received packets. Return one if finding
@@ -321,24 +217,11 @@ void sendpacket(struct nodeaddr destnode, struct packet *packetet, word len)
 
     if (destnode.node == BROADCAST_ID)
     {
-        for (unsigned int i = 0; i < sockets.size(); ++i)
-        {
-            auto& socket = sockets[i];
-            if (socket != nullptr)
-            {
-                if ((size_t) SDLNet_TCP_Send( socket, packet.data(), (int) packet.size()) != packet.size())
-                {
-                    disconnect(i);
-                }
-            }
-        }
+        transport::broadcast(packet, [](transport::Identifier index) { disconnect(index); });
     }
-    else if (sockets[destnode.node] != nullptr)
+    else if (!transport::send(destnode.node, packet))
     {
-        if ((size_t) SDLNet_TCP_Send( sockets[destnode.node], packet.data(), (int) packet.size()) != packet.size())
-        {
-            disconnect(destnode.node);
-        }
+        disconnect(destnode.node);
     }
 }
 }
