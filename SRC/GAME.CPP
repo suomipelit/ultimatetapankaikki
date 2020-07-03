@@ -2231,6 +2231,7 @@ void chk_for_loosers()
           sendipx(b, IPX_PLAYERDISCONNECTED, (char) a);
          }
         message_board.add_message(message);
+        tk_port::net::disconnect(player[a].node);
        }
 }
 

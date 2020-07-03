@@ -140,8 +140,8 @@ void close_connections()
     {
         if (socket != nullptr)
         {
-            SDLNet_TCP_DelSocket(set, socket);
             SDLNet_TCP_Close(socket);
+            SDLNet_TCP_DelSocket(set, socket);
         }
     }
 
@@ -181,6 +181,7 @@ bool is_connected()
 
 void disconnect(Identifier index)
 {
+    SDLNet_TCP_Close(sockets[index]);
     SDLNet_TCP_DelSocket(set, sockets[index]);
     sockets[index] = nullptr;
 }

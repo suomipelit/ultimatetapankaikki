@@ -40,6 +40,8 @@ void accept_connections();
 
 bool active_connections_exist();
 
+void disconnect(struct nodeaddr destnode);
+
 bool receive(struct packet *buffer);
 void sendpacket(struct nodeaddr destnode, struct packet *packetet, word len);
 

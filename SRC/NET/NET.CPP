@@ -74,16 +74,15 @@ bool active_connections_exist()
     return transport::is_connected();
 }
 
-static void disconnect(const unsigned int index)
+void disconnect(struct nodeaddr destnode)
 {
     // Disconnect is not propagated to game logic but
     // server relies on ALIVE messages. It then propagates
-    // disconnects to clients with
-    // PLAYERDISCONNECTED message.
+    // disconnects to clients with PLAYERDISCONNECTED message.
 
-    storages[index].clear();
+    storages[destnode.node].clear();
 
-    return transport::disconnect(index);
+    return transport::disconnect(destnode.node);
 }
 
 // Very simple checksum for packet sanity check
@@ -128,7 +127,7 @@ static void receive_to_storage(const unsigned int index)
         break;
     }
     case transport::DISCONNECTED:
-        disconnect(index);
+        disconnect({ index });
         break;
     default:
         break;
@@ -217,11 +216,11 @@ void sendpacket(struct nodeaddr destnode, struct packet *packetet, word len)
 
     if (destnode.node == BROADCAST_ID)
     {
-        transport::broadcast(packet, [](transport::Identifier index) { disconnect(index); });
+        transport::broadcast(packet, [](transport::Identifier index) { disconnect({ index }); });
     }
     else if (!transport::send(destnode.node, packet))
     {
-        disconnect(destnode.node);
+        disconnect(destnode);
     }
 }
 }
