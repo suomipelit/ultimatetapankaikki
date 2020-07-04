@@ -92,4 +92,5 @@ extern vile dirlist[256];
 extern int files_in_episode[256];
 extern int dirs;
 extern uint32_t client_keep_alive_time_ms;
+extern bool dedicated_server;
 #endif

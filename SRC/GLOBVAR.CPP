@@ -441,3 +441,4 @@ vile dirlist[256];
 int files_in_episode[256];
 int dirs = 0;
 uint32_t client_keep_alive_time_ms = 0;
+bool dedicated_server = false;

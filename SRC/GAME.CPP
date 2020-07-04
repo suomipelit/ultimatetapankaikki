@@ -124,7 +124,11 @@ void do_all()
         alloc_net_mem();
     }
     else std::cout << "IPX _NOT_ detected!\n";
-    if ( MIDASstartup()  )
+    if (dedicated_server)
+    {
+        std::cout << "Sounds disabled for dedicated server\n";
+    }
+    else if ( MIDASstartup() )
     {
         if ( MIDASinit()  )
         {
@@ -1382,7 +1386,7 @@ void desetup_ipx()
 void server_add_player(char *name,struct nodeaddr *n)
 {
     int colors[]={3*16,9*16,10*16,5*16,1*16,2*16,4*16,6*16};
-    int a,b;
+    int a,b,first_index = dedicated_server ? 0 : 1;
 
     for (a=0;a<MAX_PLAYERS && player[a].enabled;a++);
     strcpy(player[a].name,name);
@@ -1399,7 +1403,7 @@ void server_add_player(char *name,struct nodeaddr *n)
     player[a].time_since_last_alive=tk_port::get_time_ms();
 
     sendipxnow(n,IPX_GAMEDATA,(int)a);
-    for (b=1;b<MAX_PLAYERS;b++)
+    for (b=first_index;b<MAX_PLAYERS;b++)
      if (b!=a)
       if (player[b].enabled)
        sendipxnow(&player[b].node,IPX_NEWPLAYERDATA,a);
@@ -1408,7 +1412,7 @@ void server_add_player(char *name,struct nodeaddr *n)
 void do_server_shit()
 {
     int a,b=0,d, data, ofs;
-    unsigned int c;
+    unsigned int c, first_index = dedicated_server ? 0 : 1;
     int param1,param2,param3,param4;
     struct nodeaddr n;
     char buf[256],buf2[256];
@@ -1448,7 +1452,7 @@ void do_server_shit()
                 pcom[pcoms++]=data;
                 pl=rec[a]->data[ofs++];
                 player[pl].burning=rec[a]->data[ofs++];
-                for (c=1;c<MAX_PLAYERS;c++)
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
                    sendipx(c,IPX_BURNING,(char)pl,(char)player[pl].burning);
@@ -1464,8 +1468,8 @@ void do_server_shit()
                 for (c=0;c<sizeof(int);c++) *(str++)=rec[a]->data[ofs++];
                 str = (char *) &param4;
                 for (c=0;c<sizeof(int);c++) *(str++)=rec[a]->data[ofs++];
-                MIDASplaySample( samplep[param1], MIDAS_CHANNEL_AUTO, 0, param2, get_volume(aplayer[0]->x,aplayer[0]->y,param3,param4),get_pan(aplayer[0]->x,param3));
-                for (c=1;c<MAX_PLAYERS;c++)
+                if (!dedicated_server) MIDASplaySample( samplep[param1], MIDAS_CHANNEL_AUTO, 0, param2, get_volume(aplayer[0]->x,aplayer[0]->y,param3,param4),get_pan(aplayer[0]->x,param3));
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
                    sendipx(c,IPX_SOUND,(char)0,(char)param1,param2,param3,param4);
@@ -1491,7 +1495,7 @@ void do_server_shit()
                 str = (char *) &bullet[b].time;
                 for (c=0;c<sizeof(int);c++) *(str++)=rec[a]->data[ofs++];
 
-                for (c=1;c<MAX_PLAYERS;c++)
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
                    sendipx(c,IPX_NEWBULLET,(char)0,(int)d,(int)b);
@@ -1525,7 +1529,7 @@ void do_server_shit()
                             crate[pl].IN_USE=0;
                             crate[pl].wake_up_count=1;
                         }
-                for (c=1;c<MAX_PLAYERS;c++)
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=b)
                   if (player[c].enabled)
                    sendipx(c,IPX_UPDCRATE,0,pl);
@@ -1549,7 +1553,7 @@ void do_server_shit()
                 for (c=0;c<sizeof(float);c++) str[c]=rec[a]->data[ofs++];
                 player[pl].x=x;
                 player[pl].y=y;
-                for (c=1;c<MAX_PLAYERS;c++)
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
                    sendipx(c,IPX_PLYXY,(char)pl);
@@ -1562,7 +1566,7 @@ void do_server_shit()
 
                 str = (char *) &player[b].player_kills;
                 for (c=0;c<sizeof(int);c++) *(str++)=rec[a]->data[ofs++];
-                for (c=1;c<MAX_PLAYERS;c++)
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
                    sendipx(c,IPX_UPDKILLS,0,b);
@@ -1574,7 +1578,7 @@ void do_server_shit()
                 pl=rec[a]->data[ofs++];
                 str = (char *)&player[pl].rangle;
                 for (c=0;c<sizeof(int);c++) str[c]=rec[a]->data[ofs++];
-                for (c=1;c<MAX_PLAYERS;c++)
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
                    sendipx(c,IPX_PLYRANGLE,pl);
@@ -1585,7 +1589,7 @@ void do_server_shit()
                 pl=rec[a]->data[ofs++];
                 str = (char *)&player[pl].ANIM;
                 for (c=0;c<sizeof(int);c++) str[c]=rec[a]->data[ofs++];
-                for (c=1;c<MAX_PLAYERS;c++)
+                for (c=first_index;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
                    sendipx(c,IPX_PLYANIM,pl);
@@ -2265,9 +2269,9 @@ void game()
         aplayer[0]=&player[0];
         aplayer[1]=&player[1];
     }
-    else { ACTIVE_PLAYERS = 1;}
+    else { ACTIVE_PLAYERS = dedicated_server ? 0 : 1; }
 
-    if (GAME_MODE==NETWORK && NETWORK_MODE==SERVER)
+    if (GAME_MODE==NETWORK && NETWORK_MODE==SERVER && !dedicated_server)
     {
      player[0].enabled=1;
      aplayer[0]=&(player[0]);
@@ -2290,15 +2294,19 @@ void game()
         if ( LEVEL > LEVELS - 1 ) LEVEL = LEVELS - 1;
     }
 
-    fadeout( virbuff, pal );
-    set_keys();
+    if ( !dedicated_server )
+    {
+        fadeout( virbuff, pal );
+        set_keys();
+    }
+
     if ( GAME_MODE == NETWORK && NETWORK_MODE == CLIENT )
     {
         alusta_client();
         sendipx( 0, IPX_ALIVE );
         sendipx( 0, IPX_SENDCRATES, (char) aplayer[0]->tindex );
     }
-    else
+    else if (!dedicated_server)
     {
         alusta_players1();
     }
@@ -2340,7 +2348,7 @@ void game()
                  for ( a = 0; a < ACTIVE_PLAYERS; a ++  ) aplayer[a]->shop();
             }
 
-            tk_port::change_resolution( 240 );
+            if (!dedicated_server) tk_port::change_resolution( 240 );
 
             peli_biisi();
 
@@ -2420,7 +2428,7 @@ void game()
                     OVER_POWER = ( op[0] + op[1] + op[2] + op[3] + op[4] ) / op_table_size;
                     }
                     framecount = 0;// incremented by MIDAS timer
-                    game_shit();// do the game !!!!
+                    if (!dedicated_server) game_shit();// do the game !!!!
 
                     Steam_count ++;
                     Steam_count%= 360;
@@ -2655,6 +2663,9 @@ static void parse_cmdline( int argc, char *argv[], int *pause )
                     b = atoi( argv[++a] );
                     if ( b >= 30 && b <= 500 ) target_frames = b;
                     break;
+                case 'D':
+                    dedicated_server = true;
+                    break;
                 case 'L':
                     b = atoi( argv[++a] );
                     if ( b > 0 ) START_LEVEL = b - 1;
@@ -2707,7 +2718,14 @@ int main( int argc, char *argv[] )
     do_all();
     i::clear_stack();
     if ( pause ) i::wait_for_keypress();
-    if(episode != INVALID_EPISODE) {  // set by parse_cmdline()
+    if (dedicated_server) {
+        GAME_MODE = NETWORK;
+        NETWORK_MODE = SERVER;
+        KILLING_MODE = DEATHMATCH;
+        setup_ipx();
+        game();
+        desetup_ipx();
+    } else if(episode != INVALID_EPISODE) {  // set by parse_cmdline()
         GAME_MODE = ONE_PLAYER;
         KILLING_MODE = COOPERATIVE;
         game();

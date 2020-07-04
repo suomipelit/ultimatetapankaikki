@@ -213,7 +213,7 @@ int init()
         SDL_Log( "Error initializing SDL:  %s", SDL_GetError());
         return 1;
     }
-    if((ret = init_graphics()) != 0) {
+    if(!dedicated_server && (ret = init_graphics()) != 0) {
         return ret;
     }
     init_time();
