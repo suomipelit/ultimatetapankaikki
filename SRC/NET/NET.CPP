@@ -31,12 +31,7 @@ namespace net
 
 bool init()
 {
-#ifdef TK_PORT_EMCC
-    // Raw TCP is not working in browser environment - WebRTC port would be needed
-    return false;
-#else
     return transport::init(NUMBER_OF_STORAGES, MAXDATASIZE);
-#endif
 }
 
 void deinit()

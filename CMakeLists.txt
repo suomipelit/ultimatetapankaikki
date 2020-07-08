@@ -27,7 +27,7 @@ if (NOT EMCC)
 	find_package(SDL2_image REQUIRED)
 	find_package(SDL2_net REQUIRED)
 else()
-	set(USE_FLAGS "-O3 -s TOTAL_MEMORY=32MB -s ASYNCIFY -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s USE_SDL_MIXER=2 -s USE_SDL_NET=2 -s SDL2_IMAGE_FORMATS='[\"png\"]' --preload-file FNTS/ --preload-file EFPS/ --preload-file LEVS/ --preload-file WAVS/ --preload-file MUSIC_OGG/ --preload-file OPTIONS.CFG --shell-file SRC/WEB/shell.html")
+	set(USE_FLAGS "-O3 -s TOTAL_MEMORY=32MB -s ASYNCIFY -s ASYNCIFY_IMPORTS='[\"webrtc_create_server\", \"webrtc_connect_to_server\"]' -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s USE_SDL_MIXER=2 -s USE_SDL_NET=2 -s SDL2_IMAGE_FORMATS='[\"png\"]' --js-library SRC/NET/TRANSPORT/WEBRTC/TRANSPORT.JS --preload-file FNTS/ --preload-file EFPS/ --preload-file LEVS/ --preload-file WAVS/ --preload-file MUSIC_OGG/ --preload-file OPTIONS.CFG --shell-file SRC/WEB/shell.html")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USE_FLAGS}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${USE_FLAGS}")
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS}")
@@ -76,9 +76,15 @@ file(GLOB SOURCES
 	SRC/ERROR/*.H SRC/ERROR/*.CPP
 	SRC/NET/*.H SRC/NET/*.CPP
 	SRC/NET/TRANSPORT/*.H
-	SRC/NET/TRANSPORT/SDL/*.CPP
 	SRC/INPUT/*.H SRC/INPUT/*.CPP
         CONFIG.H)
+
+if (EMCC)
+    file(GLOB TRANSPORT_SOURCES SRC/NET/TRANSPORT/WEBRTC/*.CPP)
+else()
+    file(GLOB TRANSPORT_SOURCES SRC/NET/TRANSPORT/SDL/*.CPP)
+endif()
+list(APPEND SOURCES ${TRANSPORT_SOURCES})
 
 if (WIN32)
 	file(GLOB MSVC_SOURCES SRC/MSVC/*.H SRC/MSVC/*.CPP)
