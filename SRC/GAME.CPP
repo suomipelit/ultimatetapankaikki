@@ -1887,6 +1887,7 @@ int realjoin()
 
         while((!received)&&(!timeout))
         {
+            tk_port::event_tick( false );
             if (i::state(k::ESC)) return 0;
             for ( a = 0; a < RECEIVERS; a ++  )
             if ( tk_port::net::receive(rec[a]) )
@@ -1945,6 +1946,7 @@ int getlevel()
 
         while((!received)&&(!timeout))
         {
+            tk_port::event_tick( false );
             if (i::state(k::ESC)) return 0;
             for ( a = 0; a < RECEIVERS; a ++  )
             if ( tk_port::net::receive(rec[a]) )
@@ -1991,6 +1993,7 @@ int getlevelinfo()
 
         while((!received)&&(!timeout))
         {
+            tk_port::event_tick( false );
             if (i::state(k::ESC)) return 0;
             for ( a = 0; a < RECEIVERS; a ++  )
             if ( tk_port::net::receive(rec[a]) )
@@ -2030,25 +2033,30 @@ int join_game(struct nodeaddr n)
     draw_box1( 60, 10, 320 - 60, 190, 15 );
     fadeout( virbuff, pal );
     memcpy(virbuff,picture,64000);
+    tk_port::event_tick();
     FONT_NUM = 0;
     writefonts2( 160 - ( str_length( "joining game" )  >> 1 ), 20, "joining game", 1 );
     fadein(virbuff,pal);
     FONT_NUM = 1;
     writefonts( 80, 50, "receiving levelinfo...", M_BLUE );
     memcpy(screen,virbuff,64000);
+    tk_port::event_tick();
     if (!getlevelinfo()) return 0;
     sprintf(buf,"  \"%s\" (%d x %d)...",general_level_info.comment,level_x_size,level_y_size);
     writefonts( 80, 60,buf, M_BLUE );
     writefonts( 80, 70,"receiving level...", M_BLUE );
     memcpy(screen,virbuff,64000);
+    tk_port::event_tick();
     if (!getlevel()) return 0;
     writefonts( 80, 80,"joining game...", M_BLUE );
     memcpy(screen,virbuff,64000);
+    tk_port::event_tick();
     if (!realjoin()) return 0;
     sprintf(buf,"%d players",player_amount());
     writefonts( 80, 90,buf, M_BLUE );
     writefonts( 80, 100,"done!", M_BLUE );
     memcpy(screen,virbuff,64000);
+    tk_port::event_tick();
 
     return 1;
 }
@@ -2061,6 +2069,7 @@ int waitfor(int msg,int secs)
 
     while ((!timeout)&&(yes==0))
     {
+        tk_port::event_tick( false );
         for ( a = 0; a < RECEIVERS; a ++  )
         if ( tk_port::net::receive(rec[a]) )
         {
@@ -2088,6 +2097,7 @@ int join_server(struct nodeaddr n)
     FONT_NUM = 1;
     writefonts(80,190,"waiting...",M_BLUE);
     memcpy(screen,virbuff,64000);
+    tk_port::event_tick();
     sendipxnow(&serveraddr,IPX_JOINREQUEST);
     if (!waitfor(IPX_JOINACCEPT,3)) return 0;
     return 1;
