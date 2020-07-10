@@ -40,7 +40,8 @@ const libraryWEBRTC = {
       WEBRTC.ws.send(JSON.stringify(message));
     },
     connectToLobby: function () {
-      WEBRTC.ws = new WebSocket('ws://localhost:3000');
+      const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
+      WEBRTC.ws = new WebSocket(scheme + '://' + WEBRTC.lobbyHost);
       WEBRTC.ws.addEventListener('open', () => {
         WEBRTC.dispatchMessage({ type: 'connectedToLobby' });
       });
@@ -180,8 +181,10 @@ const libraryWEBRTC = {
   },
 
   // Return true if all required APIs are supported by the browser
-  webrtc_init: function (maxPeers) {
+  webrtc_init: function (lobbyHost, maxPeers) {
+    WEBRTC.lobbyHost = UTF8ToString(lobbyHost);
     WEBRTC.maxPeers = maxPeers;
+    fetch('//' + WEBRTC.lobbyHost);
     return !!window.WebSocket &&
       !!window.RTCPeerConnection &&
       !!window.RTCSessionDescription;

@@ -1,9 +1,10 @@
 #include "NET/TRANSPORT/TRANSPORT.H"
 #include <cstdio>
+#include <CONFIG.H>
 
 // Implemented in TRANSPORT.JS
 extern "C" {
-    extern int webrtc_init(unsigned int max_peers);
+    extern int webrtc_init(const char *lobby_host, unsigned int max_peers);
     extern void webrtc_deinit();
     extern int webrtc_create_server();
     extern int webrtc_is_server();
@@ -32,7 +33,7 @@ bool init(unsigned int max_connections, size_t max_packet_size)
 {
     max_peers = max_connections;
     max_buffer_size = max_packet_size;
-    return webrtc_init(max_connections);
+    return webrtc_init(TK_LOBBY_HOST, max_connections);
 }
 
 void deinit()
