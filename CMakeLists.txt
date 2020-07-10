@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 project(ultimatetapankaikki VERSION 1.0.2)
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/cmake-modules)
@@ -60,9 +60,6 @@ if (CMAKE_MACOSX_BUNDLE)
 	set(MACOSX_BUNDLE_ICON_FILE ${ICON_NAME})
 endif()
 
-configure_file("${PROJECT_SOURCE_DIR}/CONFIG.H.IN" "${PROJECT_BINARY_DIR}/CONFIG.H")
-include_directories(${PROJECT_BINARY_DIR})
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 if (WIN32)
@@ -94,11 +91,13 @@ endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}/SRC)
+configure_file("${PROJECT_SOURCE_DIR}/CONFIG.H.IN" "${PROJECT_BINARY_DIR}/CONFIG.H")
+target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_BINARY_DIR})
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/SRC)
 
 if (NOT EMCC)
-	target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
+	target_include_directories(${PROJECT_NAME} PUBLIC
 		${SDL2_INCLUDE_DIR}
 		${SDL2_MIXER_INCLUDE_DIRS}
 		${SDL2_IMAGE_INCLUDE_DIRS}
