@@ -39,6 +39,14 @@ struct packet *snd, *rec[RECEIVERS];
 #include "PORT_LEVEL.H"
 #include "CONFIG.H"
 
+#ifdef TK_PORT_EMCC
+#define MUSIC_DIR "MUSIC_OGG/"
+#define MUSIC_EXTENSION ".OGG"
+#else
+#define MUSIC_DIR "MUSIC/"
+#define MUSIC_EXTENSION ".S3M"
+#endif
+
 void menu_biisi()
 {
     if ( ph ) MIDASstopModule( ph );
@@ -146,17 +154,17 @@ void do_all()
         samplep[WOOSHWAV] = MIDASloadWaveSample( "WAVS/WOOSH.WAV", FALSE );putchar('.');
         samplep[FLAMEWAV] = MIDASloadWaveSample( "WAVS/FLAME.WAV", FALSE );putchar('.');
         std::cout << "\nLoading musics";fflush(stdout);
-        biisi[0] = MIDASloadModule("MUSIC/MENU.S3M");putchar('.');
-        biisi[1] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-        biisi[2] = MIDASloadModule("MUSIC/MIELIP2.S3M");putchar('.');
-        biisi[3] = MIDASloadModule("MUSIC/MIELIP2.S3M");putchar('.');
-        biisi[4] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-        biisi[5] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-//      biisi[2] = MIDASloadModule("MUSIC/BACK.S3M");putchar('.');
-//      biisi[3] = MIDASloadModule("MUSIC/UNIC_3X.S3M");putchar('.');
-//      biisi[4] = MIDASloadModule("MUSIC/MIELIP2.S3M");putchar('.');
-//      biisi[5] = MIDASloadModule("MUSIC/UNIC_2X.S3M");putchar('.');
-//      biisi[1] = MIDASloadModule("MUSIC/UNIC_1X.S3M");putchar('.');
+        biisi[0] = MIDASloadModule(MUSIC_DIR "MENU" MUSIC_EXTENSION);putchar('.');
+        biisi[1] = MIDASloadModule(MUSIC_DIR "BACK" MUSIC_EXTENSION);putchar('.');
+        biisi[2] = MIDASloadModule(MUSIC_DIR "MIELIP2" MUSIC_EXTENSION);putchar('.');
+        biisi[3] = MIDASloadModule(MUSIC_DIR "MIELIP2" MUSIC_EXTENSION);putchar('.');
+        biisi[4] = MIDASloadModule(MUSIC_DIR "BACK" MUSIC_EXTENSION);putchar('.');
+        biisi[5] = MIDASloadModule(MUSIC_DIR "BACK" MUSIC_EXTENSION);putchar('.');
+//      biisi[2] = MIDASloadModule(MUSIC_DIR "BACK" MUSIC_EXTENSION);putchar('.');
+//      biisi[3] = MIDASloadModule(MUSIC_DIR "UNIC_3X" MUSIC_EXTENSION);putchar('.');
+//      biisi[4] = MIDASloadModule(MUSIC_DIR "MIELIP2" MUSIC_EXTENSION);putchar('.');
+//      biisi[5] = MIDASloadModule(MUSIC_DIR "UNIC_2X" MUSIC_EXTENSION);putchar('.');
+//      biisi[1] = MIDASloadModule(MUSIC_DIR "UNIC_1X" MUSIC_EXTENSION);putchar('.');
         /* TODO SOUND
         for (a=0;a<6;a++)
          if (biisi[a]==NULL) error("Musicmodule #%d NULL!\n",a);

@@ -4,7 +4,7 @@
 // Using __EMSCRIPTEN__ instead of TK_PORT_EMCC because including "PORT.H" in this file
 // can cause a clash with CLOCKS_PER_SEC define...
 #if defined (__EMSCRIPTEN__)
-#define Remark " (web beta, no music/net)"
+#define Remark " (web beta, no net)"
 #else
 #define Remark
 #endif

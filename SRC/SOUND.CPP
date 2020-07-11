@@ -30,13 +30,15 @@ static bool started = false;
 
 int MIDASstartup( void )
 {
-#ifndef TK_PORT_EMCC
+#ifdef TK_PORT_EMCC
+    if ((Mix_Init( MIX_INIT_OGG ) & MIX_INIT_OGG) != MIX_INIT_OGG )
+#else
     if ((Mix_Init( MIX_INIT_MOD ) & MIX_INIT_MOD) != MIX_INIT_MOD )
+#endif
     {
         SDL_Log( "Error initializing SDL_mixer:  %s", Mix_GetError());
         return false;
     }
-#endif
     if ( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 1024 ) == -1 )
     {
         Mix_Quit();
@@ -96,9 +98,6 @@ MIDASsample MIDASloadWaveSample( const char *fileName, int loopSample )
 
 MIDASmodule MIDASloadModule( const char *fileName )
 {
-#ifdef TK_PORT_EMCC
-    return NULL;
-#else
     if (!started) return NULL;
     MIDASmodule mod = static_cast<MIDASmodule>(calloc( 1, sizeof( _MIDASmodule )));
     Mix_Music *music = Mix_LoadMUS( data_path( fileName ).c_str() );
@@ -109,7 +108,6 @@ MIDASmodule MIDASloadModule( const char *fileName )
     }
     mod->mix_music = music;
     return mod;
-#endif
 }
 
 static void resample_if_needed(MIDASsample sample, unsigned rate)
@@ -179,7 +177,6 @@ MIDASplaySample( MIDASsample sample, unsigned channel, int priority, unsigned ra
 
 MIDASmodulePlayHandle MIDASplayModule( MIDASmodule module, int loopSong )
 {
-#ifndef TK_PORT_EMCC
     if (!started) return 0;
     Mix_HaltMusic();
     if (getenv("TK_MUTE_MUSIC")) {
@@ -190,16 +187,13 @@ MIDASmodulePlayHandle MIDASplayModule( MIDASmodule module, int loopSong )
         SDL_Log( "Error playing music:  %s", Mix_GetError());
         return 0;
     }
-#endif
     return 1;
 }
 
 int MIDASstopModule( MIDASmodulePlayHandle playHandle )
 {
-#ifndef TK_PORT_EMCC
     if (!started) return true;
     Mix_HaltMusic();
-#endif
     return true;
 }
 
