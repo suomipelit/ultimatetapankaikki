@@ -1326,12 +1326,20 @@ bool filter_address_char( char c )
     return ( '0' <= c && c <= '9' ) || ('a' <= c && c <= 'z') || c == '.';
 }
 
+#ifdef TK_PORT_EMCC
+#define INITIAL_SERVER_ADDRESS "\0\0\0\0\0\0\0\0\0\0\0\0"
+#define SERVER_ADDRESS_PROMPT  "enter game id"
+#else
+// Allocate space for 123.123.123.123 at max
+#define INITIAL_SERVER_ADDRESS "127.0.0.1\0\0\0\0\0\0"
+#define SERVER_ADDRESS_PROMPT  "enter server address"
+#endif
+
 static const char* prompt_server_address()
 {
-    // Allocate space for 123.123.123.123 at max. Static so
-    // that the address is remembered over gaming session.
-    static char server_address[] = "127.0.0.1\0\0\0\0\0\0";
-    const char title[] = "enter server address";
+    // Static so that the address is remembered over gaming session.
+    static char server_address[] = INITIAL_SERVER_ADDRESS;
+    const char title[] = SERVER_ADDRESS_PROMPT;
     int x;
     fadeout(virbuff, pal);
     load_efp("EFPS/COOL.EFP", picture, 0);
