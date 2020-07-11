@@ -200,7 +200,7 @@ const libraryWEBRTC = {
   },
 
   webrtc_create_server__deps: ['$Asyncify'],
-  webrtc_create_server: function () {
+  webrtc_create_server: function (buffer, len) {
     return Asyncify.handleSleep(wakeup => {
       WEBRTC.reset('server');
 
@@ -209,11 +209,12 @@ const libraryWEBRTC = {
 
       WEBRTC.waitForMessage('connectedToLobby').then(() => {
         console.log('Creating game...');
-        WEBRTC.send({ type: 'createGame', gameId: 'xyzzy' });
+        WEBRTC.send({ type: 'createGame' });
         return WEBRTC.waitForMessage('gameCreated');
       }).then(message => {
         WEBRTC.gameId = message.gameId;
         console.log('Game created with id', message.gameId);
+        stringToUTF8(WEBRTC.gameId, buffer, len);
         wakeup(0);
       }).catch(() => {
         if (WEBRTC.ws) {

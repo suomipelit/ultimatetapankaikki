@@ -6,7 +6,7 @@
 extern "C" {
     extern int webrtc_init(const char *lobby_host, unsigned int max_peers);
     extern void webrtc_deinit();
-    extern int webrtc_create_server();
+    extern int webrtc_create_server(char *out_game_id, size_t len);
     extern int webrtc_is_server();
     extern int webrtc_connect_to_server(const char *game_id);
     extern int webrtc_is_connected();
@@ -67,9 +67,16 @@ bool send(Identifier identifier, const Buffer& buffer)
 
 int server::create_server(Port port)
 {
-    int ret = webrtc_create_server();
-    if (ret != 0) {
+    static char game_id[20];
+
+    int ret = webrtc_create_server(game_id, sizeof(game_id));
+    if (ret)
+    {
         printf("Failed to connect to lobby at " TK_LOBBY_HOST "\n");
+    }
+    else
+    {
+        printf("Game created with id %s\n", game_id);
     }
     return ret;
 }
@@ -82,7 +89,8 @@ bool is_server()
 int client::connect_to_server(const char* server_address, Port port)
 {
     int ret = webrtc_connect_to_server(server_address);
-    if (ret != 0) {
+    if (ret != 0)
+    {
         printf("Unable to connect to game host\n");
     }
     return ret;
