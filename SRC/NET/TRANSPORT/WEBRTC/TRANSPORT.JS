@@ -6,7 +6,10 @@ const libraryWEBRTC = {
       if (WEBRTC.peers) {
         WEBRTC.peers.forEach(peer => peer && peer.pc.close());
       }
-      WEBRTC.peers = new Array(WEBRTC.maxPeers);
+      WEBRTC.peers = [];
+      for (let i = 0; i < WEBRTC.maxPeers; i++) {
+        WEBRTC.peers.push(undefined);
+      }
       if (WEBRTC.ws) WEBRTC.ws.close();
       WEBRTC.ws = null;
     },
@@ -24,6 +27,9 @@ const libraryWEBRTC = {
       }
       WEBRTC.peers[index] = peer;
       return peer;
+    },
+    peerSlotsAvailable: function () {
+      return WEBRTC.peers.some(peer => peer === undefined);
     },
     findPeerById: function (peerId) {
       if (WEBRTC.mode === 'client') return WEBRTC.peers[0];
@@ -84,7 +90,7 @@ const libraryWEBRTC = {
     // peerId is undefined if mode === 'client'
     startWebrtcNegotiation: function (peerId) {
       // See https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation
-      console.log('Start WebRTC negotiation with', peerId);
+      console.log('Start WebRTC negotiation', peerId !== undefined ? 'with ' + peerId : '');
 
       const pc = new RTCPeerConnection({
         iceServers: [{
@@ -195,7 +201,7 @@ const libraryWEBRTC = {
 
   webrtc_create_server__deps: ['$Asyncify'],
   webrtc_create_server: function () {
-    Asyncify.handleSleep(wakeup => {
+    return Asyncify.handleSleep(wakeup => {
       WEBRTC.reset('server');
 
       console.log('Connecting to lobby...');
@@ -209,16 +215,36 @@ const libraryWEBRTC = {
         WEBRTC.gameId = message.gameId;
         console.log('Game created with id', message.gameId);
         wakeup(0);
-      }).catch(() => wakeup(1));
+      }).catch(() => {
+        if (WEBRTC.ws) {
+          WEBRTC.ws.close();
+          WEBRTC.ws = null;
+        }
+        wakeup(1);
+      });
 
       WEBRTC.addMessageHandler(message => {
         if (message.type === 'newClient') {
-          WEBRTC.startWebrtcNegotiation(message.clientId);
+          if (WEBRTC.peerSlotsAvailable()) {
+            WEBRTC.send({
+              type: 'acceptJoin',
+              gameId: WEBRTC.gameId,
+              clientId: message.clientId
+            });
+            WEBRTC.startWebrtcNegotiation(message.clientId);
+          } else {
+            WEBRTC.send({
+              type: 'rejectJoin',
+              gameId: WEBRTC.gameId,
+              clientId: message.clientId,
+              reason: 'Game is full',
+            });
+          }
         } else if (message.type === 'webrtcSignaling') {
           WEBRTC.handleWebrtcSignaling(message);
         } else if (message.type === 'clientVanished') {
           const peer = WEBRTC.findPeerById(message.clientId);
-          if (!peer.dataChannel) {
+          if (peer && !peer.dataChannel) {
             // Signaling not finished yet => remove
             WEBRTC.closeAndRemovePeer(peer);
           }
@@ -234,16 +260,26 @@ const libraryWEBRTC = {
   webrtc_connect_to_server__deps: ['$Asyncify'],
   webrtc_connect_to_server: function (gameIdPtr) {
     const gameId = UTF8ToString(gameIdPtr);
-    Asyncify.handleSleep(wakeup => {
+    return Asyncify.handleSleep(wakeup => {
       WEBRTC.reset('client');
 
       console.log('Connecting to lobby...');
       WEBRTC.connectToLobby();
 
       WEBRTC.waitForMessage('connectedToLobby').then(() => {
-        console.log('Joining game ', gameId);
+        console.log('Joining game', gameId);
         WEBRTC.send({ type: 'joinGame', gameId });
+        return WEBRTC.waitForMessage('acceptJoin')
+      }).then(() => {
         WEBRTC.startWebrtcNegotiation();
+      }).catch(() => {
+        if (!WEBRTC.ws) {
+          // Already got an error message and closed
+          return
+        }
+        WEBRTC.ws.close();
+        WEBRTC.ws = null;
+        wakeup(1);
       })
 
       WEBRTC.addMessageHandler(message => {
@@ -253,6 +289,11 @@ const libraryWEBRTC = {
           WEBRTC.ws.close();  // No need for WebRTC signaling anymore
           WEBRTC.ws = null;
           wakeup(0);
+        } else if (message.type === 'error') {
+          console.error('Error joining game:', message.reason)
+          WEBRTC.ws.close();
+          WEBRTC.ws = null;
+          wakeup(1);
         }
       });
     })

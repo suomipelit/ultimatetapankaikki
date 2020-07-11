@@ -67,7 +67,11 @@ bool send(Identifier identifier, const Buffer& buffer)
 
 int server::create_server(Port port)
 {
-    return webrtc_create_server();
+    int ret = webrtc_create_server();
+    if (ret != 0) {
+        printf("Failed to connect to lobby at " TK_LOBBY_HOST "\n");
+    }
+    return ret;
 }
 
 bool is_server()
@@ -77,7 +81,11 @@ bool is_server()
 
 int client::connect_to_server(const char* server_address, Port port)
 {
-    return webrtc_connect_to_server(server_address);
+    int ret = webrtc_connect_to_server(server_address);
+    if (ret != 0) {
+        printf("Unable to connect to game host\n");
+    }
+    return ret;
 }
 
 void close_connections()
