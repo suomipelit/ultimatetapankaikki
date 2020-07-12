@@ -50,6 +50,8 @@ void save_options()
     fwrite( &saved_killing_mode, sizeof( saved_killing_mode ), 1, cfg );
     fwrite( &saved_game_mode, sizeof( saved_game_mode ), 1, cfg );
     fclose( cfg );
+
+    tk_port::flush_fs();
 }
 
 void load_options()

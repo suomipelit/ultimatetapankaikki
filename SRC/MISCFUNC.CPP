@@ -653,12 +653,13 @@ std::string data_path( const std::string& pathname )
 
 std::string config_path( const std::string& pathname )
 {
-    const char *XDG_DATA_HOME;
-    const char *HOME;
     std::string result;
 
-    XDG_DATA_HOME = getenv( "XDG_DATA_HOME" );
-    HOME = getenv( "HOME" );
+#ifdef TK_PORT_EMCC
+    result += "/persistent";
+#else
+    const char *XDG_DATA_HOME = getenv( "XDG_DATA_HOME" );
+    const char *HOME = getenv( "HOME" );
 
     if ( XDG_DATA_HOME )
     {
@@ -668,6 +669,7 @@ std::string config_path( const std::string& pathname )
     {
         result += std::string(HOME) + "/.config/ultimatetapankaikki";
     }
+#endif
 
     if ( pathname.size() )
     {
@@ -699,9 +701,14 @@ std::string home_path( const std::string& pathname )
 // Returns 1 if config directory doesn't exist and cannot be created
 int ensure_config_dir_exists()
 {
+#ifdef TK_PORT_EMCC
+    // Created in port initialization as it needs to be mounted for read access too
+    return 0;
+#else
     int status = mkdir( config_path().c_str(),
                         S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH );
     return status != 0 && errno != EEXIST ? 1 : 0;
+#endif
 }
 #endif
 

@@ -31,7 +31,7 @@ else()
 	set(USE_FLAGS "-O3 -s TOTAL_MEMORY=32MB -s ASYNCIFY -s ASYNCIFY_IMPORTS='[\"webrtc_create_server\", \"webrtc_connect_to_server\"]' -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s USE_SDL_MIXER=2 -s USE_SDL_NET=2 -s SDL2_IMAGE_FORMATS='[\"png\"]' --js-library SRC/NET/TRANSPORT/WEBRTC/TRANSPORT.JS --preload-file FNTS/ --preload-file EFPS/ --preload-file LEVS/ --preload-file WAVS/ --preload-file MUSIC_OGG/ --preload-file OPTIONS.CFG --shell-file SRC/WEB/shell.html")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USE_FLAGS}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${USE_FLAGS}")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS}")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS} -lidbfs.js")
 	set(CMAKE_EXECUTABLE_SUFFIX .html)
 endif()
 

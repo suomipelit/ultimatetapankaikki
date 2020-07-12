@@ -44,6 +44,8 @@ void toggle_fullscreen( void );
 
 uint32_t get_time_ms();
 
+void flush_fs();
+
 extern bool quit_flag;
 extern uint32_t debug;
 }

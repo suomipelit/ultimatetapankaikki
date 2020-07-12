@@ -25,6 +25,10 @@ uint64_t timer_zero;
 bool full_screen = false;
 Controllers *controllers = NULL;
 
+#ifdef TK_PORT_EMCC
+bool fs_mounted = false;
+#endif
+
 #define TK_PORT_NSEC_PER_SEC 1000000000L
 #define TK_PORT_NSEC_PER_MSEC 1000000L
 #define TK_PORT_GRAPHICS_SCALE 3
@@ -201,11 +205,39 @@ void change_resolution( const unsigned int y )
 
     init_screen();
 }
+
+#ifdef TK_PORT_EMCC
+extern "C"
+{
+EMSCRIPTEN_KEEPALIVE
+void mount_ready()
+{
+    fs_mounted = true;
+}
+}
+
+void mount_fs()
+{
+    // Directory created here instead of ensure_config_dir_exists because
+    // it needs to be done for read access too
+    EM_ASM(
+        FS.mkdir('/persistent');
+        FS.mount(IDBFS, {}, '/persistent');
+        FS.syncfs(true, function (err) {
+            ccall('mount_ready', 'v');
+        });
+    );
+
+    while (!fs_mounted) sleep(1);
+}
+#endif
+
 int init()
 {
     int ret;
     read_tk_port_debug();
 #ifdef TK_PORT_EMCC
+    mount_fs();
     SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY, "0");
 #endif
     if ( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER ) != 0 )
@@ -462,6 +494,16 @@ void toggle_fullscreen()
 uint32_t get_time_ms()
 {
     return SDL_GetTicks();
+}
+
+void flush_fs()
+{
+#ifdef TK_PORT_EMCC
+    EM_ASM(
+        FS.syncfs(function (err) {
+        });
+    );
+#endif
 }
 
 /**
