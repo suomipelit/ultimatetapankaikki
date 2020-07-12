@@ -73,22 +73,35 @@ const libraryWEBRTC = {
     removeMessageHandler: function (fn) {
       WEBRTC.messageHandlers = WEBRTC.messageHandlers.filter(h => h !== fn);
     },
-    waitForMessage: function (messageType, timeoutMs) {
+    waitForMessage: function (messageTypes, timeoutMs = 5000) {
+      if (!Array.isArray(messageTypes)) {
+        messageTypes = [messageTypes];
+      }
+
       return new Promise((resolve, reject) => {
-        const done = message => {
+        const cleanup = () => {
           unsubscribe();
           clearTimeout(timeoutHandle);
+        };
+        const done = message => {
+          cleanup();
           resolve(message);
-        }
+        };
         const fail = () => {
-          unsubscribe();
+          cleanup();
           reject();
-        }
+        };
         const handler = message => {
-          if (message.type === messageType) done(message)
+          if (messageTypes.includes(message.type)) {
+            done(message);
+          } else if (message.type === error) {
+            fail(new Error(message.reason));
+          } else {
+            console.log('Ignoring unexpected message:', message);
+          }
         }
         const unsubscribe = WEBRTC.addMessageHandler(handler);
-        const timeoutHandle = setTimeout(fail, timeoutMs || 5000);
+        const timeoutHandle = timeoutMs ? setTimeout(fail, timeoutMs) : null;
       })
     },
 
@@ -117,18 +130,18 @@ const libraryWEBRTC = {
           candidate: event.candidate,
         });
       });
-      pc.addEventListener('negotiationneeded', () => {
-        peer.makingOffer = true;
-        pc.setLocalDescription().then(() => {
+      pc.addEventListener('negotiationneeded', async () => {
+        try {
+          peer.makingOffer = true;
+          await pc.setLocalDescription();
           WEBRTC.send({
             type: 'webrtcSignaling',
             clientId: peerId,
             description: pc.localDescription,
           });
-          peer.makingOffer = false;
-        }).catch(() => {
-          peer.makingOffer = false;
-        })
+        } finally {
+          makingOffer = false;
+        }
       });
       if (WEBRTC.mode === 'server') {
         const dataChannel = pc.createDataChannel('data');
@@ -142,14 +155,13 @@ const libraryWEBRTC = {
         });
       }
     },
-    handleWebrtcSignaling: function (message) {
+    handleWebrtcSignaling: async function (message) {
       // See https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Perfect_negotiation
       const peer = WEBRTC.findPeerById(message.clientId);
       const pc = peer.pc;
 
       if (message.description) {
         const description = message.description;
-
         const offerCollision =
           description.type === 'offer' &&
           (peer.makingOffer || pc.signalingState !== 'stable');
@@ -159,23 +171,23 @@ const libraryWEBRTC = {
           return;
         }
 
-        pc.setRemoteDescription(description).then(() => {
-          if (description.type === 'offer') {
-            pc.setLocalDescription().then(() => {
-              WEBRTC.send({
-                type: 'webrtcSignaling',
-                clientId: peer.peerId, // undefined if mode === 'client'
-                description: pc.localDescription,
-              })
-            });
-          }
-        });
+        await pc.setRemoteDescription(description);
+        if (description.type === 'offer') {
+          await pc.setLocalDescription();
+          WEBRTC.send({
+            type: 'webrtcSignaling',
+            clientId: peer.peerId, // undefined if mode === 'client'
+            description: pc.localDescription,
+          })
+        }
       } else if (message.candidate) {
-        pc.addIceCandidate(message.candidate).catch(err => {
-          if (!peer.ignoreOffer) {
+        try {
+          await pc.addIceCandidate(message.candidate);
+        } catch (_err) {
+          if (!ignoreOffer) {
             throw err;
           }
-        })
+        }
       }
     },
     setupDataChannel: function (peer, dataChannel) {
@@ -209,7 +221,7 @@ const libraryWEBRTC = {
     return Asyncify.handleSleep(async wakeup => {
       WEBRTC.reset('server');
 
-      WEBRTC.addMessageHandler(message => {
+      const serverHandler = message => {
         if (message.type === 'newClient') {
           if (WEBRTC.peerSlotsAvailable()) {
             WEBRTC.send({
@@ -235,7 +247,7 @@ const libraryWEBRTC = {
             WEBRTC.closeAndRemovePeer(peer);
           }
         }
-      });
+      };
 
       try {
         console.log('Connecting to lobby...');
@@ -247,6 +259,9 @@ const libraryWEBRTC = {
         const message = await WEBRTC.waitForMessage('gameCreated');
         WEBRTC.gameId = message.gameId;
         console.log('Game created with id', message.gameId);
+
+        WEBRTC.addMessageHandler(serverHandler);
+
         stringToUTF8(WEBRTC.gameId, buffer, len);
         wakeup(0);
       } catch (_err) {
@@ -265,24 +280,9 @@ const libraryWEBRTC = {
 
   webrtc_connect_to_server__deps: ['$Asyncify'],
   webrtc_connect_to_server: function (gameIdPtr) {
-    const gameId = UTF8ToString(gameIdPtr);
     return Asyncify.handleSleep(async wakeup => {
+      const gameId = UTF8ToString(gameIdPtr);
       WEBRTC.reset('client');
-
-      WEBRTC.addMessageHandler(message => {
-        if (message.type === 'webrtcSignaling') {
-          WEBRTC.handleWebrtcSignaling(message);
-        } else if (message.type === 'connected') {
-          WEBRTC.ws.close();  // No need for WebRTC signaling anymore
-          WEBRTC.ws = null;
-          wakeup(0);
-        } else if (message.type === 'error') {
-          console.error('Error joining game:', message.reason)
-          WEBRTC.ws.close();
-          WEBRTC.ws = null;
-          wakeup(1);
-        }
-      });
 
       try {
         console.log('Connecting to lobby...');
@@ -293,11 +293,22 @@ const libraryWEBRTC = {
 
         await WEBRTC.waitForMessage('acceptJoin')
         WEBRTC.startWebrtcNegotiation();
-      } catch (_err) {
-        if (!WEBRTC.ws) {
-          // Already got an error message and closed
-          return
+
+        while (true) {
+          const message = await WEBRTC.waitForMessage([
+            'webrtcSignaling',
+            'connected',
+          ])
+
+          if (message.type === 'webrtcSignaling') {
+            WEBRTC.handleWebrtcSignaling(message)
+          } else if (message.type === 'connected') {
+            break;
+          }
         }
+        wakeup(0);
+      } catch (error) {
+        console.error('Error joining game:', error.message);
         WEBRTC.ws.close();
         WEBRTC.ws = null;
         wakeup(1);
