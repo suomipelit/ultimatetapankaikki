@@ -94,7 +94,7 @@ const libraryWEBRTC = {
         const handler = message => {
           if (messageTypes.includes(message.type)) {
             done(message);
-          } else if (message.type === error) {
+          } else if (message.type === 'error') {
             fail(new Error(message.reason));
           } else {
             console.log('Ignoring unexpected message:', message);
@@ -307,8 +307,8 @@ const libraryWEBRTC = {
           }
         }
         wakeup(0);
-      } catch (error) {
-        console.error('Error joining game:', error.message);
+      } catch (err) {
+        console.error('Error joining game');
         WEBRTC.ws.close();
         WEBRTC.ws = null;
         wakeup(1);
