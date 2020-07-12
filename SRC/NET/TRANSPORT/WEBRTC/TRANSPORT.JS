@@ -145,11 +145,13 @@ const libraryWEBRTC = {
       });
       if (WEBRTC.mode === 'server') {
         const dataChannel = pc.createDataChannel('data');
+        dataChannel.binaryType = 'arraybuffer';
         dataChannel.addEventListener('open', () => {
           WEBRTC.setupDataChannel(peer, dataChannel);
         });
       } else {
         pc.addEventListener('datachannel', event => {
+          event.channel.binaryType = 'arraybuffer';
           WEBRTC.setupDataChannel(peer, event.channel);
           WEBRTC.dispatchMessage({ type: 'connected' })
         });
