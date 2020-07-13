@@ -21,6 +21,12 @@ matrix:
         - CC=gcc-8 && CXX=g++-8
     - os: linux
       compiler: clang
+    - os: linux
+      env: TK_BUILD_TYPE=browser
+      addons:
+        apt:
+          # Extra packages not needed with emcc
+          packages: []
     - os: osx
       compiler: clang
 
@@ -41,7 +47,7 @@ addons:
 
 before_install:
   - |
-    if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+    if [ "$TRAVIS_OS_NAME" = "windows" ]; then
       SDL2_VERSION=2.0.6
       SDL2_MIXER_VERSION=2.0.4
       SDL2_IMAGE_VERSION=2.0.4
@@ -62,9 +68,16 @@ before_install:
       export SDL2IMAGEDIR="C:/SDL2/SDL2_image-$SDL2_IMAGE_VERSION"
       export SDL2NETDIR="C:/SDL2/SDL2_net-$SDL2_NET_VERSION"
     fi
+  - |
+    if [ "$TK_BUILD_TYPE" = "browser" ]; then
+      git clone https://github.com/emscripten-core/emsdk.git
+      cd emsdk
+      ./emsdk install latest
+      ./emsdk activate latest
+      cd ..
+      export EXTRA_CMAKE_OPTS="-DCMAKE_TOOLCHAIN_FILE=./emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=Release"
+    fi
 
 script:
-  - mkdir build
-  - cd build
-  - cmake ..
+  - cmake $EXTRA_CMAKE_OPTS .
   - cmake --build .
