@@ -20,6 +20,7 @@ struct _MIDASsample {
     // Last resampled audio
     Mix_Chunk *mix_chunk;
     unsigned int mix_rate;
+    uint8_t *sampled_buf;
 };
 
 struct _MIDASmodule {
@@ -123,6 +124,9 @@ static void resample_if_needed(MIDASsample sample, unsigned rate)
         // Free the previous cached audio
         Mix_FreeChunk(sample->mix_chunk);
         sample->mix_chunk = NULL;
+
+        free(sample->sampled_buf);
+        sample->sampled_buf = NULL;
     }
 
     int dev_freq;
@@ -146,6 +150,7 @@ static void resample_if_needed(MIDASsample sample, unsigned rate)
 
     sample->mix_chunk = Mix_QuickLoad_RAW(cvt.buf, cvt.len_cvt);
     sample->mix_rate = rate;
+    sample->sampled_buf = cvt.buf;
 }
 
 MIDASsamplePlayHandle
