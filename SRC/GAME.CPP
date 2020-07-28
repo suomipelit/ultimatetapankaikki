@@ -1517,7 +1517,7 @@ void do_server_shit()
                 for (c=1;c<MAX_PLAYERS;c++)
                  if ((int)c!=pl)
                   if (player[c].enabled)
-                   sendipx(c,IPX_NEWBULLET,(char)0,(int)d,(int)b);
+                   sendipx(c,IPX_NEWBULLET,(char)pl,(int)d,(int)b);
                 break;
 
                 case IPX_UPDCRATE:
