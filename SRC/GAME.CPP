@@ -1252,7 +1252,9 @@ void sendipx( int dest, int type, ... )
 
         case IPX_MESSAGE:
         ipxstream[dest][ipxofs[dest] ++ ] = (char)type;
+        d=va_arg(ap,int);
         str=va_arg(ap,char *);
+        ipxstream[dest][ipxofs[dest] ++ ] = (char) d;
         for (c=0;c<MAX_MESSAGE_LENGTH;c++)
          ipxstream[dest][ipxofs[dest] ++ ] = *(str++);
         break;
@@ -1455,9 +1457,14 @@ void do_server_shit()
 
                 case IPX_MESSAGE:
                 pcom[pcoms++]=data;
+                pl=rec[a]->data[ofs++];
                 for(c=0;c<MAX_MESSAGE_LENGTH;c++)
                  buf[c]=rec[a]->data[ofs++];
                 message_board.add_message(buf);
+                for (c=1;c<MAX_PLAYERS;c++)
+                 if ((int)c!=pl)
+                  if (player[c].enabled)
+                   sendipx(c, IPX_MESSAGE,(char)pl,buf);
                 break;
 
                 case IPX_BURNING:
@@ -1765,6 +1772,7 @@ void do_client_shit()
 
                 case IPX_MESSAGE:
                 pcom[pcoms++]=data;
+                pl=rec[a]->data[ofs++];
                 for(c=0;c<MAX_MESSAGE_LENGTH;c++)
                  buf[c]=rec[a]->data[ofs++];
                 message_board.add_message(buf);
@@ -2259,7 +2267,7 @@ void chk_for_loosers()
         for (b=1;b<MAX_PLAYERS;b++)
          if (player[b].enabled)
          {
-          sendipx(b, IPX_MESSAGE, message);
+          sendipx(b, IPX_MESSAGE, (char)a, message);
           sendipx(b, IPX_PLAYERDISCONNECTED, (char) a);
          }
         message_board.add_message(message);

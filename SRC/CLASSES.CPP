@@ -937,11 +937,6 @@ void Player::get_damage( float damage, Player *P )
             message_board.add_message( buf );
         }
 
-        for (a=0;a<MAX_PLAYERS;a++)
-         if (a!=tindex)
-          if (player[a].enabled)
-           sendipx(a,IPX_MESSAGE,buf);
-
         if ( burning )
         {
             MIDASplaySample( samplep[WOOSHWAV], MIDAS_CHANNEL_AUTO, 0, 20000, EFFECT_VOLUME, MIDAS_PAN_MIDDLE );
@@ -967,11 +962,22 @@ void Player::get_damage( float damage, Player *P )
 
             if (GAME_MODE==NETWORK)
             {
-            if (NETWORK_MODE==CLIENT) sendipx(0,IPX_UPDKILLS,(char)aplayer[0]->tindex,P->tindex);
-            else
-                 for(b=1;b<MAX_PLAYERS;b++)
-                  if (player[b].enabled)
-                   sendipx(b,IPX_UPDKILLS,0,P->tindex);
+                if (NETWORK_MODE==CLIENT)
+                {
+                    if (KILLING_MODE == DEATHMATCH) sendipx(0, IPX_MESSAGE, (char)aplayer[0]->tindex, buf);
+                    sendipx(0,IPX_UPDKILLS, (char)aplayer[0]->tindex, P->tindex);
+                }
+                else
+                {
+                    for(b=1;b<MAX_PLAYERS;b++)
+                    {
+                        if (player[b].enabled)
+                        {
+                            if (KILLING_MODE == DEATHMATCH) sendipx(b, IPX_MESSAGE, (char)aplayer[0]->tindex, buf);
+                            sendipx(b, IPX_UPDKILLS, 0, P->tindex);
+                        }
+                    }
+                }
             }
 
         }
