@@ -2013,20 +2013,20 @@ int getlevel()
     return 1;
 }
 
-int getlevelinfo()
+int get_level_extras()
 {   int received,timeout;
     int s,b,a,data,ofs;
     char *p;
 
     received=0;
-    while(!received)
+    while(received<2)
     {
-        sendipxnow(&serveraddr,IPX_SENDLEVELINFO);
+        sendipxnow(&serveraddr,!received?IPX_SENDLEVELINFO:IPX_SENDLEVELEFFECTS);
         timeout=0;
 
         s=framecount;
 
-        while((!received)&&(!timeout))
+        while((received<2)&&(!timeout))
         {
             tk_port::event_tick( false );
             if (i::state(k::ESC)) return 0;
@@ -2049,44 +2049,8 @@ int getlevelinfo()
                         for (b=0;b<(int)sizeof(General_level_info);b++)
                          p[b]=rec[a]->data[ofs++];
                         received=1;
+                        sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS);
                         break;
-                        default:ofs+=IPXMSGLEN[data]-1;
-                    };
-                }
-            }
-            if ((int)(framecount-s)>target_frames) timeout=1;
-        }
-    }
-    return 1;
-}
-
-int get_level_effects()
-{   int received,timeout;
-    int s,b,a,data,ofs;
-    char *p;
-
-    received=0;
-    while(!received)
-    {
-        sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS);
-        timeout=0;
-
-        s=framecount;
-
-        while((!received)&&(!timeout))
-        {
-            tk_port::event_tick( false );
-            if (i::state(k::ESC)) return 0;
-            for ( a = 0; a < RECEIVERS; a ++  )
-            if ( tk_port::net::receive(rec[a]) )
-            {
-                data =  - 1;
-                ofs = 0;
-                while( data!= IPX_END )
-                {
-                    data = rec[a]->data[ofs++];
-                    switch ( data )
-                    {
                         case IPX_LEVELEFFECTS:
                         Steam_amount = rec[a]->data[ofs++];
                         Spot_amount = rec[a]->data[ofs++];
@@ -2096,13 +2060,12 @@ int get_level_effects()
                         p=(char *)&spot_light;
                         for (b=0;b<(int)sizeof(spot_light);b++)
                          p[b]=rec[a]->data[ofs++];
-                        received=1;
-                        break;
+                        received=2;
                         default:ofs+=IPXMSGLEN[data]-1;
                     };
                 }
             }
-            if ((int)(framecount-s)>target_frames) timeout=1;
+            if ((int)(framecount-s)>(target_frames*2)) timeout=1;
         }
     }
     return 1;
@@ -2124,15 +2087,13 @@ int join_game(struct nodeaddr n)
     writefonts( 80, 50, "receiving levelinfo and effects...", M_BLUE );
     memcpy(screen,virbuff,64000);
     tk_port::event_tick();
-    if (!getlevelinfo()) return 0;
+    if (!get_level_extras()) return 0;
     sprintf(buf,"  \"%s\" (%d x %d)...",general_level_info.comment,level_x_size,level_y_size);
     writefonts( 80, 60,buf, M_BLUE );
     writefonts( 80, 70,"receiving level...", M_BLUE );
     memcpy(screen,virbuff,64000);
     tk_port::event_tick();
     if (!getlevel()) return 0;
-    tk_port::event_tick();
-    if (!get_level_effects()) return 0;
     writefonts( 80, 80,"joining game...", M_BLUE );
     memcpy(screen,virbuff,64000);
     tk_port::event_tick();
