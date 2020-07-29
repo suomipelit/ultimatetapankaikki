@@ -1130,6 +1130,8 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                              break;
         case IPX_SENDLEVELINFO:snd->data[a++] = ( char ) type;
                                break;
+        case IPX_SENDLEVELEFFECTS:snd->data[a++] = ( char ) type;
+                               break;
         case IPX_SENDLEVEL:snd->data[a++] = ( char ) type;
                            b = va_arg( ap, int);
                            snd->data[a++] = (char)(b & 255);
@@ -1159,6 +1161,17 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                             snd->data[a++]=(char)(level_y_size>>8);
                             p=(char *)&general_level_info;
                             for (b=0;b<(int)sizeof(General_level_info);b++)
+                             snd->data[a++]=p[b];
+                            break;
+        case IPX_LEVELEFFECTS:
+                            snd->data[a++]=(char)type;
+                            snd->data[a++]=(char)(Steam_amount);
+                            snd->data[a++]=(char)(Spot_amount);
+                            p=(char *)&steam;
+                            for (b=0;b<(int)sizeof(steam);b++)
+                             snd->data[a++]=p[b];
+                            p=(char *)&spot_light;
+                            for (b=0;b<(int)sizeof(spot_light);b++)
                              snd->data[a++]=p[b];
                             break;
         default:error("sendipxnow: message %d not yet implemented\n", type );
@@ -1649,6 +1662,12 @@ void do_server_shit()
                 sendipxnow(&n, IPX_LEVELINFO);
                 break;
 
+                case IPX_SENDLEVELEFFECTS:
+                pcom[pcoms++]=data;
+                n.node=rec[a]->header.src.node;
+                sendipxnow(&n, IPX_LEVELEFFECTS);
+                break;
+
                 case IPX_SENDLEVEL:
                 pcom[pcoms++]=data;
                 n.node=rec[a]->header.src.node;
@@ -2041,6 +2060,54 @@ int getlevelinfo()
     return 1;
 }
 
+int get_level_effects()
+{   int received,timeout;
+    int s,b,a,data,ofs;
+    char *p;
+
+    received=0;
+    while(!received)
+    {
+        sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS);
+        timeout=0;
+
+        s=framecount;
+
+        while((!received)&&(!timeout))
+        {
+            tk_port::event_tick( false );
+            if (i::state(k::ESC)) return 0;
+            for ( a = 0; a < RECEIVERS; a ++  )
+            if ( tk_port::net::receive(rec[a]) )
+            {
+                data =  - 1;
+                ofs = 0;
+                while( data!= IPX_END )
+                {
+                    data = rec[a]->data[ofs++];
+                    switch ( data )
+                    {
+                        case IPX_LEVELEFFECTS:
+                        Steam_amount = rec[a]->data[ofs++];
+                        Spot_amount = rec[a]->data[ofs++];
+                        p=(char *)&steam;
+                        for (b=0;b<(int)sizeof(steam);b++)
+                         p[b]=rec[a]->data[ofs++];
+                        p=(char *)&spot_light;
+                        for (b=0;b<(int)sizeof(spot_light);b++)
+                         p[b]=rec[a]->data[ofs++];
+                        received=1;
+                        break;
+                        default:ofs+=IPXMSGLEN[data]-1;
+                    };
+                }
+            }
+            if ((int)(framecount-s)>target_frames) timeout=1;
+        }
+    }
+    return 1;
+}
+
 int join_game(struct nodeaddr n)
 {   char buf[256];
 
@@ -2054,7 +2121,7 @@ int join_game(struct nodeaddr n)
     writefonts2( 160 - ( str_length( "joining game" )  >> 1 ), 20, "joining game", 1 );
     fadein(virbuff,pal);
     FONT_NUM = 1;
-    writefonts( 80, 50, "receiving levelinfo...", M_BLUE );
+    writefonts( 80, 50, "receiving levelinfo and effects...", M_BLUE );
     memcpy(screen,virbuff,64000);
     tk_port::event_tick();
     if (!getlevelinfo()) return 0;
@@ -2064,6 +2131,8 @@ int join_game(struct nodeaddr n)
     memcpy(screen,virbuff,64000);
     tk_port::event_tick();
     if (!getlevel()) return 0;
+    tk_port::event_tick();
+    if (!get_level_effects()) return 0;
     writefonts( 80, 80,"joining game...", M_BLUE );
     memcpy(screen,virbuff,64000);
     tk_port::event_tick();

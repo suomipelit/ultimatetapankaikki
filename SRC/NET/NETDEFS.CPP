@@ -29,5 +29,7 @@ int IPXMSGLEN[] =
     0, // messsssssaaaaaaaaaaage
     0, // saund
     0, // NEWPLAYERDATA
-    0  // PLAYERDISCONNECTED
+    0, // PLAYERDISCONNECTED
+    0, // SENDLEVELEFFECTS
+    2 * sizeof(char) + sizeof(Steam) * MAX_STEAM + sizeof(Spot) * MAX_SPOTS, // LEVELEFFECTS
 };

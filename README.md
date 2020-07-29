@@ -221,6 +221,7 @@ Releases
     - Fixed joining with cooperative mode as active
     - Fixed kill messages
     - Fixed frag count in some cases
+    - Fixed missing smoke and spot light effects on clients
     - Increased network code execution frequency
     - Reduced keep-alive messages
 - Fixed a memory leak in sound resampling
