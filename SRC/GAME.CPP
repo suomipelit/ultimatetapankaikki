@@ -1130,8 +1130,11 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                              break;
         case IPX_SENDLEVELINFO:snd->data[a++] = ( char ) type;
                                break;
-        case IPX_SENDLEVELEFFECTS:snd->data[a++] = ( char ) type;
-                               break;
+        case IPX_SENDLEVELEFFECTS:
+                           b = va_arg(ap, int);
+                           snd->data[a++] = (char) type;
+                           snd->data[a++] = (char) b;
+                           break;
         case IPX_SENDLEVEL:snd->data[a++] = ( char ) type;
                            b = va_arg( ap, int);
                            snd->data[a++] = (char)(b & 255);
@@ -1165,14 +1168,32 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                             break;
         case IPX_LEVELEFFECTS:
                             snd->data[a++]=(char)type;
-                            snd->data[a++]=(char)(Steam_amount);
-                            snd->data[a++]=(char)(Spot_amount);
-                            p=(char *)&steam;
-                            for (b=0;b<(int)sizeof(steam);b++)
-                             snd->data[a++]=p[b];
-                            p=(char *)&spot_light;
-                            for (b=0;b<(int)sizeof(spot_light);b++)
-                             snd->data[a++]=p[b];
+                            b = va_arg( ap, int );
+                            snd->data[a++]=(char)b;
+                            if (b == 0)
+                            {
+                              // First packet is for amounts
+                              snd->data[a++] = (char)(Steam_amount);
+                              snd->data[a++] = (char)(Spot_amount);
+                            }
+                            else if (b > 0 && b < 5)
+                            {
+                              // 4 packets for steams, indexes 1, 2, 3 and 4
+                              const int data_size = (int)sizeof(steam)/4;
+                              p=(char *)&steam;
+                              p+=data_size*(b-1);
+                              for (b=0;b<data_size;b++)
+                               snd->data[a++]=p[b];
+                            }
+                            else
+                            {
+                              // 4 packets for spot lights, indexes 5, 6, 7 and 8
+                              const int data_size = (int)sizeof(spot_light)/4;
+                              p=(char *)&spot_light;
+                              p+=data_size*(b-5);
+                              for (b=0;b<data_size;b++)
+                               snd->data[a++]=p[b];
+                            }
                             break;
         default:error("sendipxnow: message %d not yet implemented\n", type );
     }
@@ -1665,7 +1686,8 @@ void do_server_shit()
                 case IPX_SENDLEVELEFFECTS:
                 pcom[pcoms++]=data;
                 n.node=rec[a]->header.src.node;
-                sendipxnow(&n, IPX_LEVELEFFECTS);
+                b=rec[a]->data[ofs++];
+                sendipxnow(&n, IPX_LEVELEFFECTS, (int)b);
                 break;
 
                 case IPX_SENDLEVEL:
@@ -2013,15 +2035,18 @@ int getlevel()
     return 1;
 }
 
-int get_level_extras()
+int getlevelextras()
 {   int received,timeout;
-    int s,b,a,data,ofs;
+    int s,b,bno,a,data,ofs,effect_block=0;
     char *p;
 
     received=0;
     while(received<2)
     {
-        sendipxnow(&serveraddr,!received?IPX_SENDLEVELINFO:IPX_SENDLEVELEFFECTS);
+        if (!received)
+          sendipxnow(&serveraddr,IPX_SENDLEVELINFO);
+        else
+          sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS,(int)effect_block);
         timeout=0;
 
         s=framecount;
@@ -2049,23 +2074,42 @@ int get_level_extras()
                         for (b=0;b<(int)sizeof(General_level_info);b++)
                          p[b]=rec[a]->data[ofs++];
                         received=1;
-                        sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS);
+                        sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS,0);
                         break;
                         case IPX_LEVELEFFECTS:
-                        Steam_amount = rec[a]->data[ofs++];
-                        Spot_amount = rec[a]->data[ofs++];
-                        p=(char *)&steam;
-                        for (b=0;b<(int)sizeof(steam);b++)
-                         p[b]=rec[a]->data[ofs++];
-                        p=(char *)&spot_light;
-                        for (b=0;b<(int)sizeof(spot_light);b++)
-                         p[b]=rec[a]->data[ofs++];
-                        received=2;
+                        bno = rec[a]->data[ofs++];
+                        if (bno != effect_block) return 0;
+                        if (effect_block == 0)
+                        {
+                            Steam_amount = rec[a]->data[ofs++];
+                            Spot_amount = rec[a]->data[ofs++];
+                        }
+                        else if (effect_block > 0 && effect_block < 5)
+                        {
+                            const int data_size = (int)sizeof(steam)/4;
+                            p=(char *)&steam;
+                            p+=data_size*(effect_block-1);
+                            for (b=0;b<data_size;b++)
+                             p[b]=rec[a]->data[ofs++];
+                        }
+                        else
+                        {
+                            const int data_size = (int)sizeof(spot_light)/4;
+                            p=(char *)&spot_light;
+                            p+=data_size*(effect_block-5);
+                            for (b=0;b<data_size;b++)
+                             p[b]=rec[a]->data[ofs++];
+                        }
+                        if (effect_block == 8)
+                            received = 2;
+                        else
+                            sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS,(int)++effect_block);
+                        break;
                         default:ofs+=IPXMSGLEN[data]-1;
                     };
                 }
             }
-            if ((int)(framecount-s)>(target_frames*2)) timeout=1;
+            if ((int)(framecount-s)>target_frames) timeout=1;
         }
     }
     return 1;
@@ -2087,7 +2131,7 @@ int join_game(struct nodeaddr n)
     writefonts( 80, 50, "receiving levelinfo and effects...", M_BLUE );
     memcpy(screen,virbuff,64000);
     tk_port::event_tick();
-    if (!get_level_extras()) return 0;
+    if (!getlevelextras()) return 0;
     sprintf(buf,"  \"%s\" (%d x %d)...",general_level_info.comment,level_x_size,level_y_size);
     writefonts( 80, 60,buf, M_BLUE );
     writefonts( 80, 70,"receiving level...", M_BLUE );

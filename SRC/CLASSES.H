@@ -70,18 +70,18 @@ class Death_match_level_info
 class Spot
 {
     public:
-    int x;
-    int y;
-    int size;
+    int32_t x;
+    int32_t y;
+    int32_t size;
 };
 
 class Steam
 {
     public:
-    int x;
-    int y;
-    int angle;
-    int speed;
+    int32_t x;
+    int32_t y;
+    int32_t angle;
+    int32_t speed;
 };
 
 class Light_table
