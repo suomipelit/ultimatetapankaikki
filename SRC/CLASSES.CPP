@@ -927,16 +927,6 @@ void Player::get_damage( float damage, Player *P )
     energy -= damage;
     if ( energy <= 0 )
     {
-
-        if ( KILLING_MODE == DEATHMATCH )
-        {
-            if ( P->tindex != tindex )
-                sprintf( buf, killtexts[rand() % ktexts], P->name, name );
-            else
-                sprintf( buf, suicidetexts[rand() % stexts], P->name, name );
-            message_board.add_message( buf );
-        }
-
         if ( burning )
         {
             MIDASplaySample( samplep[WOOSHWAV], MIDAS_CHANNEL_AUTO, 0, 20000, EFFECT_VOLUME, MIDAS_PAN_MIDDLE );
@@ -956,6 +946,15 @@ void Player::get_damage( float damage, Player *P )
         DEAD = 1;
         if ( P!= NULL )
         {
+            if ( KILLING_MODE == DEATHMATCH )
+            {
+                if ( P->tindex != tindex )
+                    sprintf( buf, killtexts[rand() % ktexts], P->name, name );
+                else
+                    sprintf( buf, suicidetexts[rand() % stexts], P->name, name );
+                message_board.add_message( buf );
+            }
+
             if ( P!= this )
                 P->player_kills++;
             else player_kills --;
