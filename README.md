@@ -143,6 +143,11 @@ New features:
   screen that appears at the start of each level.  Useful for
   impatient developers.
 
+- Name is not cleared if pressing ESC in name prompt.
+
+- Player name is prompted if starting or joining to network game with
+  default name.
+
 Bugfixes:
 
 - Many memory leaks and buffer overflows have been fixed.
