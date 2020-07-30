@@ -23,6 +23,10 @@ struct nodeaddr serveraddr;
 char servername[10];
 struct packet *snd, *rec[RECEIVERS];
 
+const size_t effect_packet_divider = 4;
+const int steam_packet_size = (int)sizeof(steam) / effect_packet_divider;
+const int spot_light_packet_size = (int)sizeof(spot_light) / effect_packet_divider;
+
 /************************* NET STUFF **************************************/
 #include "MISCFUNC.H"
 #include "WRITE.H"// tosi paskoja rutiineja !!!
@@ -1170,28 +1174,26 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                             snd->data[a++]=(char)type;
                             b = va_arg( ap, int );
                             snd->data[a++]=(char)b;
-                            if (b == 0)
+                            if (!b)
                             {
                               // First packet is for amounts
                               snd->data[a++] = (char)(Steam_amount);
                               snd->data[a++] = (char)(Spot_amount);
                             }
-                            else if (b > 0 && b < 5)
+                            else if (b <= effect_packet_divider)
                             {
                               // 4 packets for steams, indexes 1, 2, 3 and 4
-                              const int data_size = (int)sizeof(steam)/4;
                               p=(char *)&steam;
-                              p+=data_size*(b-1);
-                              for (b=0;b<data_size;b++)
+                              p+=steam_packet_size*(b-1);
+                              for (b=0;b<steam_packet_size;b++)
                                snd->data[a++]=p[b];
                             }
                             else
                             {
                               // 4 packets for spot lights, indexes 5, 6, 7 and 8
-                              const int data_size = (int)sizeof(spot_light)/4;
                               p=(char *)&spot_light;
-                              p+=data_size*(b-5);
-                              for (b=0;b<data_size;b++)
+                              p+=spot_light_packet_size*(b-1-effect_packet_divider);
+                              for (b=0;b<spot_light_packet_size;b++)
                                snd->data[a++]=p[b];
                             }
                             break;
@@ -2079,28 +2081,26 @@ int getlevelextras()
                         case IPX_LEVELEFFECTS:
                         bno = rec[a]->data[ofs++];
                         if (bno != effect_block) return 0;
-                        if (effect_block == 0)
+                        if (!effect_block)
                         {
                             Steam_amount = rec[a]->data[ofs++];
                             Spot_amount = rec[a]->data[ofs++];
                         }
-                        else if (effect_block > 0 && effect_block < 5)
+                        else if (effect_block <= effect_packet_divider)
                         {
-                            const int data_size = (int)sizeof(steam)/4;
                             p=(char *)&steam;
-                            p+=data_size*(effect_block-1);
-                            for (b=0;b<data_size;b++)
+                            p+=steam_packet_size*(effect_block-1);
+                            for (b=0;b<steam_packet_size;b++)
                              p[b]=rec[a]->data[ofs++];
                         }
                         else
                         {
-                            const int data_size = (int)sizeof(spot_light)/4;
                             p=(char *)&spot_light;
-                            p+=data_size*(effect_block-5);
-                            for (b=0;b<data_size;b++)
+                            p+=spot_light_packet_size*(effect_block-1-effect_packet_divider);
+                            for (b=0;b<spot_light_packet_size;b++)
                              p[b]=rec[a]->data[ofs++];
                         }
-                        if (effect_block == 8)
+                        if (effect_block == (2*effect_packet_divider))
                             received = 2;
                         else
                             sendipxnow(&serveraddr,IPX_SENDLEVELEFFECTS,(int)++effect_block);
