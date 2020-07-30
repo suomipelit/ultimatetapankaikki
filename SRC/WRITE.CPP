@@ -55,12 +55,7 @@ void readline( int x, int y, int len, char *str, char *screen, bool (*filter_cha
                     str[strlen( str )] = key;
                 }
             }
-        if ( input == k::ESC )
-        {
-            str[0] = 0;
-            done = 1;
-        }
-        if ( input == k::ENTER )
+        if ( input == k::ESC || input == k::ENTER )
         {
             done = 1;
         }

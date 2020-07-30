@@ -568,6 +568,16 @@ int deathmatch_options()
     return(start);
 }
 
+// Open a name prompt for player 1 if user has not yet changed it
+void prompt_name_if_needed()
+{
+    if ( !strcmp( name1, "phucka" ) )
+    {
+        change_name( 1, false );
+        save_options();
+    }
+}
+
 void multiplayer_options()
 {
     int yoffs = ( 15*num_multip_options )  / 2, a, cnt = 0, selected = 0, quit = 0, oclock = 0;
@@ -653,6 +663,8 @@ void multiplayer_options()
                 {
                     if ( GAME_MODE == NETWORK )
                     {
+                        prompt_name_if_needed();
+
                         if ( deathmatch_options())
                         {
                             NETWORK_MODE = SERVER;
@@ -697,6 +709,7 @@ void multiplayer_options()
             }
             if ( selected == 1 )
             {
+                prompt_name_if_needed();
 
                 GAME_MODE = NETWORK;
                 NETWORK_MODE = CLIENT;

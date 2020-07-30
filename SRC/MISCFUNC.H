@@ -8,7 +8,7 @@
 
 #include "TYPES.H"
 
-void change_name( int num );
+void change_name( int num, bool fade_out = true );
 char *k_2_c( const i::Input& input );
 i::Input get_key( int x, int y );
 void clear_shit( int y );
