@@ -583,11 +583,32 @@ void screen_capture()
     message_board.add_message(text1);
 }
 
+void clear_text_chat_input()
+{
+    text_chat_active = false;
+    text_chat_input.clear();
+    k::text_input_mode(NULL);
+}
+
 void chkeys()
 {
     int a;
 
     if ( i::state(k::ESC) ) quiti();
+
+    if ( quit )
+    {
+        clear_text_chat_input();
+    }
+    else if ( !text_chat_active && i::state(k::ENTER) )
+    {
+        text_chat_active = true;
+        i::clear(k::ENTER);
+        k::text_input_mode(&text_chat_input);
+    }
+
+    // Take no more input until chat input is given
+    if ( text_chat_active ) return;
 
     for ( a = 0; a < ACTIVE_PLAYERS; a++ )
         if ( !aplayer[a]->DEAD )
@@ -909,6 +930,43 @@ void do_steam()
     }
 }
 
+void text_chat()
+{
+  if (text_chat_active)
+  {
+    // Full text is "<name>: <text>"
+    char text[MAX_MESSAGE_LENGTH];
+
+    if (text_chat_input.length() > MAX_MESSAGE_USERTEXT_LENGTH)
+    {
+      text_chat_input.erase(MAX_MESSAGE_USERTEXT_LENGTH);
+    }
+
+    sprintf(text, "> %s", text_chat_input.c_str());
+
+    const i::Input input = i::get_last_key();
+    if (input == tk_port::keyb::ENTER)
+    {
+      if (!text_chat_input.empty())
+      {
+        sprintf(text, "%s: %s", aplayer[0]->name, text_chat_input.c_str());
+        message_board.add_message(text);
+        if (NETWORK_MODE == CLIENT)
+          sendipx(0, IPX_MESSAGE, (char)aplayer[0]->tindex, text);
+        else
+          for (int a = 1; a < MAX_PLAYERS; a++)
+            if (player[a].enabled)
+              sendipx(a, IPX_MESSAGE, (char)aplayer[0]->tindex, text);
+      }
+      clear_text_chat_input();
+    }
+    i::clear_stack();
+
+    // Position just below full message board
+    if (text_chat_active) writefonts(5, 30 + 6 * 9, text, 1);
+  }
+}
+
 void game_shit()
 {
     int a;
@@ -964,6 +1022,7 @@ void game_shit()
     draw_infos();
     draw_energies();
     message_board.draw();
+    if ( GAME_MODE == NETWORK ) text_chat();
     if ( next_level ) complete();
     if ( KILLING_MODE!= DEATHMATCH )
     kello();
@@ -2598,6 +2657,7 @@ void game()
             next_level = 0;
         }
     }
+    clear_text_chat_input();
     load_efp_pal( "EFPS/WARE.EFP", pal );
 }
 

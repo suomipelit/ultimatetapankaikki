@@ -20,6 +20,9 @@ class Message_board
   int messages;
   int time_count;
   char message[MAX_MESSAGES][MAX_MESSAGE_LENGTH];
+  // Regular drawing color is neutral gray. But if there is
+  // a player's name and a colon in the beginning, it is
+  // drawn with player's color instead
   void add_message(char msg[MAX_MESSAGE_LENGTH]);
   void draw();
   void clear();

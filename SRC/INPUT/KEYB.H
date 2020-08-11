@@ -1,6 +1,7 @@
 #ifndef __TK__KEYB__
 #define __TK__KEYB__
 
+#include <string>
 #include <SDL.h>
 #include "INPUT.H"
 
@@ -37,6 +38,10 @@ namespace keyb
     char scancode_to_char( SDL_Scancode scancode );
 
     void handle_event( const SDL_Event * );
+
+    // Enable text input mode which then fills buffer as user types.
+    // Disabled with NULL.
+    void text_input_mode( std::string* buffer );
 }
 }
 

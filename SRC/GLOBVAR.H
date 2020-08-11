@@ -1,6 +1,7 @@
 #ifndef __TK__GLOBVAR__
 #define __TK__GLOBVAR__
 #include <time.h>
+#include <string>
 #include "PORT.H"
 #include "INPUT/KEYB.H"
 #include "DEFINES.H"
@@ -28,7 +29,7 @@ extern char cratespr[], shadowspr[], c4spr[], grenadespr[], targetspr[], floorsp
 extern char wallspr[], floorspr2[], rambospr[], bodypartspr[], effectspr[];
 extern char pal[], picture[], warespr[], enemyspr0[], enemyspr1[], enemyspr2[];
 extern char enemyspr3[], enemyspr4[], enemyspr5[], enemyspr6[], enemyspr7[], minespr[];
-extern char name1[10], name2[10];
+extern char name1[MAX_NAME_LENGTH], name2[MAX_NAME_LENGTH];
 extern char trans_table[256][256];
 extern char shadow_table[256][16];
 extern const char *menu_text[Menu_texts];
@@ -92,4 +93,6 @@ extern vile dirlist[256];
 extern int files_in_episode[256];
 extern int dirs;
 extern uint32_t client_keep_alive_time_ms;
+extern bool text_chat_active;
+extern std::string text_chat_input;
 #endif

@@ -85,6 +85,7 @@ selects fist, `1` selects pistola, `2` selects shotgun, etc.
 | F5 | Toggle frame rate |
 | F12 | Capture screen shot |
 | Left alt + Return | Toggle full screen |
+| Return | Text chat (multiplayer only) |
 
 **Shop controls**
 
@@ -147,6 +148,8 @@ New features:
 
 - Player name is prompted if starting or joining to network game with
   default name.
+
+- Text chat in multiplayer games with `Return` key.
 
 Bugfixes:
 
@@ -229,6 +232,7 @@ Releases
 
 - [Web port](https://suomipelit.github.io/ultimatetapankaikki-web/)
 - Network gaming changes
+    - Text chat with `Return` key
     - Fixed joining with cooperative mode as active
     - Fixed kill messages
     - Fixed frag count in some cases

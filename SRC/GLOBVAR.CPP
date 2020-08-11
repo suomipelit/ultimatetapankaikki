@@ -67,7 +67,7 @@ char enemyspr5[1160*232];
 char enemyspr6[1160*232];
 char enemyspr7[1160*232];
 char minespr[7*7];
-char name1[10], name2[10];
+char name1[MAX_NAME_LENGTH], name2[MAX_NAME_LENGTH];
 char trans_table[256][256];
 char shadow_table[256][16];
 const char *menu_text[Menu_texts] =
@@ -441,3 +441,5 @@ vile dirlist[256];
 int files_in_episode[256];
 int dirs = 0;
 uint32_t client_keep_alive_time_ms = 0;
+bool text_chat_active = false;
+std::string text_chat_input;

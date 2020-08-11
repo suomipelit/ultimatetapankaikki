@@ -55,13 +55,42 @@ void Message_board::add_message(char msg[])
 }
 
 void Message_board::draw(){
- int a,yoffs=5;
+ int a,b,yoffs=5,neutral_color=32;
 
  if (KILLING_MODE==DEATHMATCH)  yoffs=30;
 
  if (time_count>0) time_count--; else clear();
  for (a=0;a<messages;a++)
-  writefonts(5,yoffs+a*9,message[a],32);
+ {
+   char copy[MAX_MESSAGE_LENGTH];
+   strcpy(copy,message[a]);
+   char* split = strchr(copy,':');
+   if (split && strlen(split) > 1)
+   {
+     const int y_offset = yoffs+a*9;
+     int player_color = neutral_color;
+     const char stored_char = *(split + 1);
+     *(split+1) = '\0'; // Split text to "<name>:" first
+
+     for(b=0;b<MAX_PLAYERS;b++)
+     {
+       if (player[b].enabled && !strncmp(player[b].name, copy, strlen(copy)-1))
+       {
+         player_color = player[b].color;
+         break;
+       }
+     }
+
+     writefonts(5,y_offset,copy,player_color); // Print "<name>:" with player's color
+     const int name_screen_length = str_length(copy);
+     *(split+1) = stored_char; // Restore copy to full "<text>"
+     writefonts(5+name_screen_length,y_offset,split+1,neutral_color); // Print "<text>" with neutral color
+   }
+   else
+   {
+     writefonts(5,yoffs+a*9,message[a],neutral_color);
+   }
+ }
 }
 
 void Message_board::clear()
