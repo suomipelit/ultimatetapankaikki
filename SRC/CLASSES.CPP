@@ -76,8 +76,14 @@ void Message_board::draw(){
      {
        if (player[b].enabled && !strncmp(player[b].name, copy, split - copy))
        {
+         // If same name exists many times, use neutral color. This shouldn't happen
+         // after adding separate running number to duplicated names
+         if (player_color != neutral_color)
+         {
+           player_color = neutral_color;
+           break;
+         }
          player_color = player[b].color;
-         break;
        }
      }
 
