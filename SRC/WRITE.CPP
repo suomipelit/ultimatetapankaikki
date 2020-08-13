@@ -16,14 +16,14 @@ void loadfonts( const char *name )
     tk_port::load_png_font( &thefonts[FONT_NUM], png_name );
 }
 
-void writefonts( int x, int y, const char *str, int cq )
+int writefonts( int x, int y, const char *str, int cq )
 {
-    tk_port::draw_text( &thefonts[FONT_NUM], x, y, str, cq, tk_port::DrawGradientText );
+    return tk_port::draw_text( &thefonts[FONT_NUM], x, y, str, cq, tk_port::DrawGradientText );
 }
 
-void writefonts2( int x, int y, const char *str, int cq )
+int writefonts2( int x, int y, const char *str, int cq )
 {
-    tk_port::draw_text( &thefonts[FONT_NUM], x, y, str, cq, tk_port::DrawBitmapText );
+    return tk_port::draw_text( &thefonts[FONT_NUM], x, y, str, cq, tk_port::DrawBitmapText );
 }
 
 int str_length( const char *str )

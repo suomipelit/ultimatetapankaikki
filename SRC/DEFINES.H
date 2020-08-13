@@ -14,7 +14,7 @@
 #define CRATE_WAKE_UP_COUNT 500 // = 12.5 secs if 40 frames per sec
 #define MESSAGE_TIME_ON_SCREEN 200  // = 5 secs if 40 frames per sec
 #define MAX_MESSAGES 6
-#define MAX_MESSAGE_LENGTH 40
+#define MAX_MESSAGE_LENGTH 64
 #define MAX_PLAYERS 8  // max amount of players in game
 #define DIFF_BULLETS 9
 #define DIFF_WEAPONS 11
