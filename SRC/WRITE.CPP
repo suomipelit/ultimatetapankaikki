@@ -56,8 +56,8 @@ void readline( int x, int y, int len, char *str, char *screen, bool (*filter_cha
         for (dy = 0; dy < (int)f->glyph_height; dy++)
           memcpy(screen + x + ((dy + y) * 320), virbuff + x + ((dy + y) * 320), len * f->glyph_width);
 
-        // Limit input length
-        if (text_input.length() > (size_t)len) text_input.erase(len);
+        // Limit input length including termination
+        if (text_input.length() > (size_t)len - 1) text_input.erase(len - 1);
 
         // Original readline callers only expect lower case with their filter_char
         std::transform(text_input.begin(), text_input.end(), text_input.begin(),
