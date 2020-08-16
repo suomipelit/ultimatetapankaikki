@@ -1,10 +1,12 @@
 #include "GLOBVAR.H"
 #include "PORT_TEXT.H"
 #include "PORT_IMAGE.H"
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <cctype>
+#include <string>
 #include "ERROR/ERROR.H"
 #include "INPUT/INPUT.H"
 #include "MISCFUNC.H"
@@ -33,39 +35,49 @@ int str_length( const char *str )
 
 void readline( int x, int y, int len, char *str, char *screen, bool (*filter_char)( char ))
 {
-    int done = 0, a, dy;
+    int dy;
     char *bg;
     i::Input input;
     tk_port::Font *f = &thefonts[FONT_NUM];
     bg = (char *) malloc( 320 * f->glyph_height );
-    memcpy( bg, screen + x + (y * 320), 320 * f->glyph_height );
-    while (!done)
+    memcpy( bg, screen + (y * 320), 320 * f->glyph_height );
+    std::string text_input = str;
+    k::text_input_mode( &text_input );
+
+    while ( true )
     {
-        writefonts2( x, y, str, 1 );
-        for ( dy = 0; dy < (int)f->glyph_height; dy++ )
-            memcpy( screen + x + ((dy + y) * 320), virbuff + x + ((dy + y) * 320), len * f->glyph_width );
-        input = i::wait_for_keypress();
-        if ( input != k::ESC && input != k::BACKSPACE && input != k::ENTER && input.get_type() == i::Input::Keyboard )
-            if ((int) strlen( str ) < (len - 1))
-            {
-                char key = k::scancode_to_char( input.scancode );
-                if ( filter_char( key ))
-                {
-                    str[strlen( str ) + 1] = 0;
-                    str[strlen( str )] = key;
-                }
-            }
-        if ( input == k::ESC || input == k::ENTER )
-        {
-            done = 1;
-        }
-        if ( input == k::BACKSPACE )
-        {
-            if ( strlen( str ) > 0 )
-                str[strlen( str ) - 1] = 0;
-            a = str_length( str ) + x;
-            for ( dy = 0; dy < (int)f->glyph_height; dy++ )
-                memcpy( virbuff + a + ((dy + y) * 320), bg + (dy * 320) + str_length( str ), f->glyph_width );
-        }
+        // Writes background to virtual buffer where text is to be written
+        memcpy(virbuff + y * 320, bg, 320 * f->glyph_height);
+
+        // Writes text to virtual buffer on top of background
+        writefonts2(x, y, str, 1);
+
+        // Copies text (incl. background) from virtual buffer to screen
+        for (dy = 0; dy < (int)f->glyph_height; dy++)
+          memcpy(screen + x + ((dy + y) * 320), virbuff + x + ((dy + y) * 320), len * f->glyph_width);
+
+        // Limit input length
+        if (text_input.length() > (size_t)len) text_input.erase(len);
+
+        // Original readline callers only expect lower case with their filter_char
+        std::transform(text_input.begin(), text_input.end(), text_input.begin(),
+          [](char c) { return std::tolower(c); });
+
+        // Remove characters which are not allowed
+        text_input.erase(
+          std::remove_if( text_input.begin(), text_input.end(),
+            [filter_char](char c) { return !filter_char(c); }), text_input.end() );
+
+        // Copy input text to caller's char buffer
+        strncpy( str, text_input.c_str(), len );
+
+        const i::Input input = i::get_last_key();
+        if (input == tk_port::keyb::ENTER || input == tk_port::keyb::ESC)
+            break;
+
+        tk_port::event_tick();
     }
+
+    free( bg );
+    k::text_input_mode( NULL );
 }
