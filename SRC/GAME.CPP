@@ -1184,6 +1184,8 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                               break;
         case IPX_SERVERANSWER:snd->data[a++] = ( char ) type;
                               str = va_arg( ap, char * );
+                              snd->data[a++] = (char) player_amount();
+                              snd->data[a++] = (char) MAX_PLAYERS;
                               for ( b = 0; b < 10; b++ )
                               snd->data[a++ ] = str[b];
                               break;
@@ -2254,11 +2256,11 @@ int join_server(struct nodeaddr n)
 
 int select_server()
 {
-    int a, b, c,data,ofs,first=1,done=0,cnt=0,oclock=0;
+    int a, b, c, d,data,ofs,first=1,done=0,cnt=0,oclock=0;
     int select=0;
     int chg=1;
     int servers=0;
-    char servernames[10][10],tempname[10];
+    char servernames[10][16],tempname[10];
     struct nodeaddr nodez[10],tempnode;
     struct nodeaddr bc;
 
@@ -2339,6 +2341,8 @@ int select_server()
                 {
                     case IPX_SERVERANSWER:
                     tempnode.node=rec[a]->header.src.node;
+                    c=rec[a]->data[ofs++];
+                    d=rec[a]->data[ofs++];
                     for (b=0;b<10;b++)
                      tempname[b]=rec[a]->data[ofs++];
                     if (servers<10)
@@ -2348,7 +2352,7 @@ int select_server()
                         {
                             chg=1;
                             memcpy(&nodez[servers],&tempnode,sizeof(nodeaddr));
-                            strcpy(servernames[servers],tempname);
+                            sprintf(servernames[servers],"%s [%u/%u]",tempname,c,d);
                             servers++;
                         }
                     }

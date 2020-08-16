@@ -7,7 +7,7 @@ int IPXMSGLEN[] =
     1,  // END
     1,  // SERVERSEARCH
     20, // TEXTMESSAGE (text)
-    11, // SERVERANSWER (name)
+    13, // SERVERANSWER (name)
     1,  // SERVERSHUTDOWN
     1,  // JOINREQUEST
     2,  // JOINACCEPT (1/0)
