@@ -153,6 +153,8 @@ New features:
 
 - Text input fields support copy-paste (`Ctrl + c/v`)
 
+- Number of players on a server is shown on server list
+
 Bugfixes:
 
 - Many memory leaks and buffer overflows have been fixed.
@@ -242,6 +244,7 @@ Releases
     - Fixed frag count in some cases
     - Fixed missing smoke and spot light effects on clients
     - Increased network code execution frequency
+    - Show number of players on server list
     - Reduced keep-alive messages
 - Fixed a memory leak in sound resampling
 - Fixed minor buffer overflow with sprite loading
