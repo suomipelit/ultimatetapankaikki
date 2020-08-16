@@ -51,9 +51,11 @@ void change_name( int num, bool fade_out )
     fadein( virbuff, pal );
     i::clear_stack();
     if ( num == 1 )
-        readline( x, 100, MAX_NAME_LENGTH, name1, screen, filter_name_char );
+        do readline( x, 100, MAX_NAME_LENGTH, name1, screen, filter_name_char );
+        while (!strcmp(name1, ""));
     if ( num == 2 )
-        readline( x, 100, MAX_NAME_LENGTH, name2, screen, filter_name_char );
+        do readline( x, 100, MAX_NAME_LENGTH, name2, screen, filter_name_char );
+        while (!strcmp(name2, ""));
     if ( fade_out )
         fadeout( virbuff, pal );
 }
