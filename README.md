@@ -167,6 +167,8 @@ Bugfixes:
 
 - Player names and colors were mixed up in split screen mode.
 
+- Empty player name is not allowed.
+
 Building from source
 --------------------
 
@@ -242,6 +244,7 @@ Releases
 - Fixed a memory leak in sound resampling
 - Fixed minor buffer overflow with sprite loading
 - Fixed a local deathmatch crash if playing with enemies
+- Fixed empty name input
 - Avoid unnecessary screen drawing
 
 **[Version 2](https://github.com/suomipelit/ultimatetapankaikki/releases/tag/v2) - 2019-02-04**
