@@ -53,7 +53,7 @@ Received receive(Identifier index);
 
 namespace server
 {
-int create_server(Port port);
+int create_server(const char *server_name, unsigned int max_players, Port port);
 
 void accept_connections();
 }

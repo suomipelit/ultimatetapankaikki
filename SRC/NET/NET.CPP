@@ -39,9 +39,9 @@ void deinit()
     transport::deinit();
 }
 
-int create_server(const unsigned int port)
+int create_server(const char *server_name, unsigned int max_players, const unsigned int port)
 {
-    return transport::server::create_server(port);
+    return transport::server::create_server(server_name, max_players, port);
 }
 
 int connect_server(const char* server_address, const unsigned int port)

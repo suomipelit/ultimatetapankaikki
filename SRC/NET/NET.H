@@ -31,7 +31,7 @@ namespace net
 bool init();
 void deinit();
 
-int create_server(const unsigned int port);
+int create_server(const char *server_name, unsigned int max_players, const unsigned int port);
 int connect_server(const char*, const unsigned int port);
 
 void close_connections();

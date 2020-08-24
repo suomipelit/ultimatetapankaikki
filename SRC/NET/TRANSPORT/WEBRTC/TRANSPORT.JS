@@ -219,7 +219,7 @@ const libraryWEBRTC = {
   },
 
   webrtc_create_server__deps: ['$Asyncify'],
-  webrtc_create_server: function (buffer, len) {
+  webrtc_create_server: function (serverName, maxPlayers, buffer, len) {
     return Asyncify.handleSleep(async wakeup => {
       WEBRTC.reset('server');
 
@@ -256,7 +256,11 @@ const libraryWEBRTC = {
         await WEBRTC.connectToLobby();
 
         console.log('Creating game...');
-        WEBRTC.send({ type: 'createGame' });
+        WEBRTC.send({
+          type: 'createGame',
+          serverName: UTF8ToString(serverName),
+          maxPlayers
+        });
 
         const message = await WEBRTC.waitForMessage('gameCreated');
         WEBRTC.gameId = message.gameId;

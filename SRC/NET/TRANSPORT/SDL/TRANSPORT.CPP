@@ -77,7 +77,7 @@ bool send(Identifier identifier, const Buffer& buffer)
     return true;
 }
 
-int server::create_server(Port port)
+int server::create_server(const char *server_name, unsigned int max_players, Port port)
 {
     IPaddress ip;
 

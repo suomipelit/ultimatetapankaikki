@@ -1463,7 +1463,7 @@ void setup_ipx()
     {
         strcpy( servername, name1 );
         serveraddr.node = 0;
-        if ( tk_port::net::create_server(port) )
+        if ( tk_port::net::create_server(servername, MAX_PLAYERS, port) )
         {
             error("opensocket: Couldn't open socket (%u)\n", port);
         }
