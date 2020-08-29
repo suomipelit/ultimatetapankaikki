@@ -9,7 +9,9 @@ extern "C" {
     extern int webrtc_create_server(const char *server_name, unsigned int max_players,
                                     char *out_game_id, size_t len);
     extern int webrtc_is_server();
+    extern int webrtc_connect_to_lobby();
     extern int webrtc_connect_to_server(const char *game_id);
+    extern int webrtc_get_server_list(char *out_server_info, size_t len);
     extern int webrtc_is_connected();
     extern int webrtc_has_peer(unsigned int peer_index);
     extern void webrtc_reset();
@@ -29,6 +31,58 @@ namespace
     static size_t max_peers;
     static size_t max_buffer_size;
 }
+
+#if defined(TK_PORT_EMCC)
+ServerInfo::ServerInfo(const char* serialized)
+{
+    char* copy = strdup(serialized);
+    const char* delimiter = ";";
+    char *end_token;
+    size_t context = 0;
+    char* split_ptr = strtok_r(copy, delimiter, &end_token);
+
+    while (split_ptr != NULL)
+    {
+        switch(context++)
+        {
+            case 0:
+            gameId = split_ptr;
+            break;
+
+            case 1:
+            serverName = split_ptr;
+            break;
+
+            case 2:
+            playerAmount = strtol(split_ptr, NULL, 10);
+            break;
+
+            case 3:
+            maxPlayers = strtol(split_ptr, NULL, 10);;
+            break;
+
+            default:
+            break;
+        }
+
+        split_ptr = strtok_r(NULL, delimiter, &end_token);
+    }
+    free(copy);
+}
+
+bool ServerInfo::operator==(const ServerInfo& rhs) const
+{
+    return gameId == rhs.gameId &&
+        serverName == rhs.serverName &&
+        playerAmount == rhs.playerAmount &&
+        maxPlayers == rhs.maxPlayers;
+}
+
+bool ServerInfo::operator!=(const ServerInfo& rhs) const
+{
+    return !operator==(rhs);
+}
+#endif
 
 bool init(unsigned int max_connections, size_t max_packet_size)
 {
@@ -85,6 +139,41 @@ int server::create_server(const char *server_name, unsigned int max_players, Por
 bool is_server()
 {
     return webrtc_is_server();
+}
+
+int connect_to_lobby()
+{
+    int ret = webrtc_connect_to_lobby();
+    if (ret != 0)
+    {
+        printf("Unable to connect to lobby\n");
+    }
+    return ret;
+}
+
+ServerInfos client::get_server_list()
+{
+    static char server_list[1024];
+    ServerInfos server_infos;
+
+    int ret = webrtc_get_server_list(server_list, sizeof(server_list));
+    if (ret != 0)
+    {
+        printf("Unable to get server list\n");
+        return server_infos;
+    }
+
+    const char* server_delimiter = "|";
+    char *end_token;
+    char* server_split_ptr = strtok_r(server_list, server_delimiter, &end_token);
+
+    while (server_split_ptr != NULL)
+    {
+        server_infos.push_back(ServerInfo(server_split_ptr));
+        server_split_ptr = strtok_r(NULL, server_delimiter, &end_token);
+    }
+
+    return server_infos;
 }
 
 int client::connect_to_server(const char* server_address, Port port)

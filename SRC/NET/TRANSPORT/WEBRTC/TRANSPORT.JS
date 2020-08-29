@@ -10,8 +10,10 @@ const libraryWEBRTC = {
       for (let i = 0; i < WEBRTC.maxPeers; i++) {
         WEBRTC.peers.push(undefined);
       }
-      if (WEBRTC.ws) WEBRTC.ws.close();
-      WEBRTC.ws = null;
+      if (!WEBRTC.mode) {
+        if (WEBRTC.ws) WEBRTC.ws.close();
+        WEBRTC.ws = null;
+      }
     },
     addPeer: function (peerId, pc) {
       const index = WEBRTC.peers.findIndex(peer => peer === undefined);
@@ -47,6 +49,10 @@ const libraryWEBRTC = {
     },
     connectToLobby: function () {
       return new Promise((resolve, reject) => {
+        if (WEBRTC.ws) {
+          // Already connected
+          resolve();
+        }
         const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
         WEBRTC.ws = new WebSocket(scheme + '://' + WEBRTC.lobbyHost);
 
@@ -207,6 +213,7 @@ const libraryWEBRTC = {
 
   // Return true if all required APIs are supported by the browser
   webrtc_init: function (lobbyHost, maxPeers) {
+    WEBRTC.messageHandlers = [];
     WEBRTC.lobbyHost = UTF8ToString(lobbyHost);
     WEBRTC.maxPeers = maxPeers;
     fetch('//' + WEBRTC.lobbyHost);
@@ -216,6 +223,25 @@ const libraryWEBRTC = {
   },
 
   webrtc_deinit: function () {
+  },
+
+  webrtc_connect_to_lobby__deps: ['$Asyncify'],
+  webrtc_connect_to_lobby: function () {
+    return Asyncify.handleSleep(async wakeup => {
+      try {
+        console.log('Connecting to lobby...');
+        await WEBRTC.connectToLobby();
+
+        console.log('Connected to lobby');
+        wakeup(0);
+      } catch (_err) {
+        if (WEBRTC.ws) {
+          WEBRTC.ws.close();
+          WEBRTC.ws = null;
+        }
+        wakeup(1);
+      }
+    });
   },
 
   webrtc_create_server__deps: ['$Asyncify'],
@@ -252,9 +278,6 @@ const libraryWEBRTC = {
       };
 
       try {
-        console.log('Connecting to lobby...');
-        await WEBRTC.connectToLobby();
-
         console.log('Creating game...');
         WEBRTC.send({
           type: 'createGame',
@@ -291,9 +314,6 @@ const libraryWEBRTC = {
       WEBRTC.reset('client');
 
       try {
-        console.log('Connecting to lobby...');
-        await WEBRTC.connectToLobby();
-
         console.log('Joining game', gameId);
         WEBRTC.send({ type: 'joinGame', gameId });
 
@@ -315,11 +335,34 @@ const libraryWEBRTC = {
         wakeup(0);
       } catch (err) {
         console.error('Error joining game');
-        WEBRTC.ws.close();
-        WEBRTC.ws = null;
         wakeup(1);
       }
     })
+  },
+
+  webrtc_get_server_list__deps: ['$Asyncify'],
+  webrtc_get_server_list: function (buffer, len) {
+    const get_server_list_string = function (obj) {
+      return obj.map(server =>
+        `${server.gameId};${server.serverName};${server.playerAmount};${server.maxPlayers}`)
+        .join('|');
+    };
+
+    return Asyncify.handleSleep(async wakeup => {
+      try {
+        WEBRTC.send({
+          type: 'listGames'
+        });
+
+        const message = await WEBRTC.waitForMessage('gameList');
+        WEBRTC.games = message.games;
+
+        stringToUTF8(get_server_list_string(WEBRTC.games), buffer, len);
+        wakeup(0);
+      } catch (_err) {
+        wakeup(1);
+      }
+    });
   },
 
   webrtc_is_connected: function () {

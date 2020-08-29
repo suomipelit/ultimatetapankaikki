@@ -27,6 +27,9 @@ const size_t effect_packet_divider = 4;
 const int steam_packet_size = (int)sizeof(steam) / effect_packet_divider;
 const int spot_light_packet_size = (int)sizeof(spot_light) / effect_packet_divider;
 
+// TODO: Port could be configurable.
+const unsigned int port = 8099;
+
 /************************* NET STUFF **************************************/
 #include "MISCFUNC.H"
 #include "WRITE.H"// tosi paskoja rutiineja !!!
@@ -44,6 +47,9 @@ const int spot_light_packet_size = (int)sizeof(spot_light) / effect_packet_divid
 #include "CONFIG.H"
 
 #ifdef TK_PORT_EMCC
+// WebRTC implementation has a separate server lobby, some special functions are needed
+#include "NET/TRANSPORT/TRANSPORT.H"
+
 #define MUSIC_DIR "MUSIC_OGG/"
 #define MUSIC_EXTENSION ".OGG"
 #else
@@ -1425,15 +1431,11 @@ bool filter_address_char( char c )
     return ( '0' <= c && c <= '9' ) || ('a' <= c && c <= 'z') || c == '.';
 }
 
-#ifdef TK_PORT_EMCC
-#define INITIAL_SERVER_ADDRESS "\0\0\0\0\0\0\0\0\0\0\0\0"
-#define SERVER_ADDRESS_PROMPT  "enter game id"
-#else
 // Allocate space for 123.123.123.123 at max
 #define INITIAL_SERVER_ADDRESS "127.0.0.1\0\0\0\0\0\0"
 #define SERVER_ADDRESS_PROMPT  "enter server address"
-#endif
 
+#if !defined(TK_PORT_EMCC)
 static const char* prompt_server_address()
 {
     // Static so that the address is remembered over gaming session.
@@ -1452,11 +1454,17 @@ static const char* prompt_server_address()
     readline(x, 100, sizeof(server_address), server_address, screen, filter_address_char);
     return server_address;
 }
+#endif
 
 void setup_ipx()
 {
-    // TODO: Port could be configurable.
-    const unsigned int port = 8099;
+#if defined(TK_PORT_EMCC)
+    if ( tk_port::net::transport::connect_to_lobby() )
+    {
+        error("Couldn't connect to lobby\n");
+    }
+#endif
+
     int a;
     for ( a = 0; a < MAX_PLAYERS; a ++  ) ipxofs[a] = 0;
     if ( NETWORK_MODE == SERVER )
@@ -1465,9 +1473,12 @@ void setup_ipx()
         serveraddr.node = 0;
         if ( tk_port::net::create_server(servername, MAX_PLAYERS, port) )
         {
-            error("opensocket: Couldn't open socket (%u)\n", port);
+            error("Couldn't open socket (%u)\n", port);
         }
     }
+#if !defined(TK_PORT_EMCC)
+    // TCP port asks for the IP address directly. EMCC port receives server list
+    // from lobby server separately
     else if (NETWORK_MODE == CLIENT)
     {
         // Connection to nonexisting server has long timeout within
@@ -1475,9 +1486,10 @@ void setup_ipx()
         // will do for now.
         if ( tk_port::net::connect_server(prompt_server_address(), port) )
         {
-            warn("opensocket: Couldn't open socket (%u)\n", port);
+            warn("Couldn't connect to server (%u)\n", port);
         }
     }
+#endif
 }
 
 void desetup_ipx()
@@ -2256,13 +2268,24 @@ int join_server(struct nodeaddr n)
 
 int select_server()
 {
-    int a, b, c, d,data,ofs,first=1,done=0,cnt=0,oclock=0;
+    int a, c, first=1,done=0,cnt=0,oclock=0;
+#if !defined(TK_PORT_EMCC)
+    int b, d,data,ofs;
+#endif
     int select=0;
     int chg=1;
     int servers=0;
-    char servernames[10][16],tempname[10];
-    struct nodeaddr nodez[10],tempnode;
+    char servernames[10][16] = {{0}};
+#if !defined(TK_PORT_EMCC)
+    char tempname[10];
+    struct nodeaddr tempnode;
+#endif
+    struct nodeaddr nodez[10] = {{0}};
     struct nodeaddr bc;
+#if defined(TK_PORT_EMCC)
+    tk_port::net::transport::ServerInfos last_server_list;
+    int server_list_brake = 0;
+#endif
 
     load_efp( "EFPS/COOL.EFP", picture, 0 );
     draw_box1( 60, 10, 320 - 60, 190, 15 );
@@ -2276,6 +2299,14 @@ int select_server()
     {
         if (i::state(k::ENTER) && servers>0)
         {
+#if defined(TK_PORT_EMCC)
+            const bool connect_result = tk_port::net::connect_server(last_server_list[select].gameId.c_str(), port);
+            if ( connect_result )
+            {
+                warn("Couldn't connect to server\n");
+            }
+            else
+#endif
             if (join_server(nodez[select])) done=1;
             else
             {
@@ -2290,8 +2321,8 @@ int select_server()
             i::clear(k::ENTER);
         }
         if (servers>0){
-         if (i::state(k::ARROW_UP) && select>0) {select--;i::clear(k::ARROW_UP);}
-         if (i::state(k::ARROW_DOWN) && select<servers-1) {select++;i::clear(k::ARROW_DOWN);}
+         if (i::state(k::ARROW_UP) && select>0) {select--;i::clear(k::ARROW_UP);chg=1;}
+         if (i::state(k::ARROW_DOWN) && select<servers-1) {select++;i::clear(k::ARROW_DOWN);chg=1;}
         }
         memcpy( virbuff, picture, 64000 );
         FONT_NUM = 0;
@@ -2326,9 +2357,34 @@ int select_server()
             cnt ++;
             if ( cnt > 23 ) cnt = 0;
 
+#if defined(TK_PORT_EMCC)
+            if ( !(server_list_brake++ % TARGET_FRAMES) )
+            {
+                servers = 0;
+                const auto server_list = tk_port::net::transport::client::get_server_list();
+                for (const auto& server : server_list)
+                {
+                    if (last_server_list.size() > (size_t)servers && (last_server_list[servers] != server)) chg=1;
+
+                    // TODO: Server should update player count, until then do not show player numbers
+                    //sprintf(servernames[servers],"%s [%u/%u]",
+                    //    server.serverName.c_str(),
+                    //    server.playerAmount,
+                    //    server.maxPlayers);
+                    sprintf(servernames[servers],"%s",server.serverName.c_str());
+                    servers++;
+                }
+
+                if (last_server_list.size() != (size_t)servers) chg=1;
+
+                last_server_list = server_list;
+            }
+#else
             sendipxnow(&bc, IPX_SERVERSEARCH);
+#endif
         }
 
+#if !defined(TK_PORT_EMCC)
         for ( a = 0; a < RECEIVERS; a ++  )
         if ( tk_port::net::receive(rec[a]) )
         {
@@ -2383,6 +2439,7 @@ int select_server()
                 };
             }
         }
+#endif
         if (i::state(k::ESC)) return 0;
     }
 
