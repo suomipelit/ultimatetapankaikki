@@ -1,5 +1,6 @@
 #include "SERVERINFO.H"
 
+#include <stdlib.h>
 #include <string.h>
 
 namespace tk_port

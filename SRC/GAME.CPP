@@ -1223,7 +1223,10 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                             snd->data[a++] = (char) b;
                             if (b) message_board.add_message((char*)"Accepting player...");
                               else message_board.add_message((char*)"Player NOT accepted...");
-
+#if defined(TK_PORT_EMCC)
+                            // Player gets enabled when it sends its first keep-alive, hence +1 at this point
+                            tk_port::net::update_server(servername, player_amount()+1, MAX_PLAYERS);
+#endif
                             break;
         case IPX_LEVELINFO: snd->data[a++]=(char)type;
                             snd->data[a++]=(char)(level_x_size&255);
@@ -2363,12 +2366,10 @@ int select_server()
                 {
                     if (last_server_list.size() > (size_t)servers && (last_server_list[servers] != server)) chg=1;
 
-                    // TODO: Server should update player count, until then do not show player numbers
-                    //sprintf(servernames[servers],"%s [%u/%u]",
-                    //    server.serverName.c_str(),
-                    //    server.playerAmount,
-                    //    server.maxPlayers);
-                    sprintf(servernames[servers],"%s",server.serverName.c_str());
+                    sprintf(servernames[servers],"%s [%u/%u]",
+                        server.serverName.c_str(),
+                        server.playerAmount,
+                        server.maxPlayers);
                     servers++;
                 }
 
@@ -2463,6 +2464,9 @@ void chk_for_loosers()
          }
         message_board.add_message(message);
         tk_port::net::disconnect(player[a].node);
+#if defined(TK_PORT_EMCC)
+        tk_port::net::update_server(servername, player_amount(), MAX_PLAYERS);
+#endif
        }
 }
 

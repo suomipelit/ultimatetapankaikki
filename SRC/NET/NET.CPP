@@ -49,6 +49,11 @@ ServerInfos get_server_list()
 {
     return transport::client::get_server_list();
 }
+
+int update_server(const char *server_name, unsigned int player_amount, unsigned int max_players)
+{
+    return transport::server::update_server(server_name, player_amount, max_players);
+}
 #endif
 
 int create_server(const char *server_name, unsigned int max_players, const unsigned int port)

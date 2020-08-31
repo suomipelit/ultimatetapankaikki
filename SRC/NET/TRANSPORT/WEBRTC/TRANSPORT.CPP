@@ -8,6 +8,8 @@ extern "C" {
     extern void webrtc_deinit();
     extern int webrtc_create_server(const char *server_name, unsigned int max_players,
                                     char *out_game_id, size_t len);
+    extern int webrtc_update_server(const char *server_name, unsigned int player_amount,
+                                    unsigned int max_players);
     extern int webrtc_is_server();
     extern int webrtc_connect_to_lobby();
     extern int webrtc_connect_to_server(const char *game_id);
@@ -80,6 +82,16 @@ int server::create_server(const char *server_name, unsigned int max_players, Por
     else
     {
         printf("Game created with id %s\n", game_id);
+    }
+    return ret;
+}
+
+int server::update_server(const char *server_name, unsigned int player_amount, unsigned int max_players)
+{
+    int ret = webrtc_update_server(server_name, player_amount, max_players);
+    if (ret)
+    {
+        printf("Failed to update server info\n");
     }
     return ret;
 }

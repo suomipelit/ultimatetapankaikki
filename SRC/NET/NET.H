@@ -38,6 +38,7 @@ void deinit();
 #ifdef TK_PORT_EMCC
 int connect_to_lobby();
 ServerInfos get_server_list();
+int update_server(const char *server_name, unsigned int player_amount, unsigned int max_players);
 #endif
 
 int create_server(const char *server_name, unsigned int max_players, const unsigned int port);

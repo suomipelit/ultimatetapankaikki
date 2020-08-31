@@ -303,6 +303,27 @@ const libraryWEBRTC = {
     });
   },
 
+  webrtc_update_server__deps: ['$Asyncify'],
+  webrtc_update_server: function (serverName, playerAmount, maxPlayers) {
+    return Asyncify.handleSleep(async wakeup => {
+      try {
+        WEBRTC.send({
+          type: 'updateGameInfo',
+          serverName: UTF8ToString(serverName),
+          playerAmount,
+          maxPlayers
+        });
+        wakeup(0);
+      } catch (_err) {
+        if (WEBRTC.ws) {
+          WEBRTC.ws.close();
+          WEBRTC.ws = null;
+        }
+        wakeup(1);
+      }
+    });
+  },
+
   webrtc_is_server: function () {
     return WEBRTC.mode === 'server';
   },

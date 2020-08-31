@@ -41,7 +41,9 @@ bool init(unsigned int max_connections, size_t max_packet_size);
 
 void deinit();
 
+#if defined(TK_PORT_EMCC)
 int connect_to_lobby();
+#endif
 
 bool is_server();
 
@@ -61,12 +63,18 @@ namespace server
 {
 int create_server(const char *server_name, unsigned int max_players, Port port);
 
+#if defined(TK_PORT_EMCC)
+int update_server(const char *server_name, unsigned int player_amount, unsigned int max_players);
+#endif
+
 void accept_connections();
 }
 
 namespace client
 {
+#if defined(TK_PORT_EMCC)
 ServerInfos get_server_list();
+#endif
 
 int connect_to_server(const char* server_address, Port port);
 }
