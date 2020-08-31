@@ -32,7 +32,11 @@ ServerInfo::ServerInfo(const char* serialized)
             break;
 
             case 3:
-            maxPlayers = strtol(split_ptr, NULL, 10);;
+            maxPlayers = strtol(split_ptr, NULL, 10);
+            break;
+
+            case 4:
+            requiresPassword = !strcmp("true", split_ptr);
             break;
 
             default:
@@ -49,7 +53,8 @@ bool ServerInfo::operator==(const ServerInfo& rhs) const
     return gameId == rhs.gameId &&
         serverName == rhs.serverName &&
         playerAmount == rhs.playerAmount &&
-        maxPlayers == rhs.maxPlayers;
+        maxPlayers == rhs.maxPlayers &&
+        requiresPassword == rhs.requiresPassword;
 }
 
 bool ServerInfo::operator!=(const ServerInfo& rhs) const

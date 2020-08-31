@@ -58,7 +58,11 @@
 #define num_player_options 5
 #define num_game_options 4
 #define num_sound_options 3
+#if defined (__EMSCRIPTEN__)
+#define num_deathmatch_options 5
+#else
 #define num_deathmatch_options 4
+#endif
 #define num_multip_options 7
 #define DIFF_K 10
 #define INVALID_EPISODE -1
@@ -93,5 +97,7 @@
 
 #define MAX_NAME_LENGTH 10
 #define MAX_MESSAGE_USERTEXT_LENGTH (MAX_MESSAGE_LENGTH - MAX_NAME_LENGTH - 2 - 1)
+
+#define MAX_PASSWORD_LENGTH 10
 
 #endif

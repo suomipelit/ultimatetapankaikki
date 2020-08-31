@@ -77,7 +77,7 @@ bool send(Identifier identifier, const Buffer& buffer)
     return true;
 }
 
-int server::create_server(const char *server_name, unsigned int max_players, Port port)
+int server::create_server(const char *server_name, unsigned int max_players, Port port, const char*)
 {
     IPaddress ip;
 
@@ -103,14 +103,14 @@ bool is_server()
     return server_socket != nullptr;
 }
 
-int client::connect_to_server(const char* server_address, Port port)
+ServerConnectResult client::connect_to_server(const char* server_address, Port port, const char*)
 {
     IPaddress ip;
 
     if (SDLNet_ResolveHost(&ip, server_address, port) == -1)
     {
         printf("Error resolving host: %s\n", SDLNet_GetError());
-        return 1;
+        return ServerConnectResult::UNKNOWN_ERROR;
     }
 
     TCPsocket socket = SDLNet_TCP_Open(&ip);
@@ -118,14 +118,14 @@ int client::connect_to_server(const char* server_address, Port port)
     if (!socket)
     {
         printf("Error opening socket: %s\n", SDLNet_GetError());
-        return 2;
+        return ServerConnectResult::UNKNOWN_ERROR;
     }
 
     // Client always has just one socket to server
     sockets[0] = socket;
     SDLNet_TCP_AddSocket(set, socket);
 
-    return 0;
+    return ServerConnectResult::SUCCESS;
 }
 
 void close_connections()

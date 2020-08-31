@@ -19,6 +19,7 @@ struct ServerInfo
   std::string serverName;
   uint8_t playerAmount;
   uint8_t maxPlayers;
+  bool requiresPassword;
 };
 
 using ServerInfos = std::vector<ServerInfo>;

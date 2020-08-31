@@ -14,6 +14,7 @@ const libraryWEBRTC = {
         if (WEBRTC.ws) WEBRTC.ws.close();
         WEBRTC.ws = null;
       }
+      WEBRTC.serverPassword = null;
     },
     addPeer: function (peerId, pc) {
       const index = WEBRTC.peers.findIndex(peer => peer === undefined);
@@ -51,6 +52,7 @@ const libraryWEBRTC = {
       return new Promise((resolve, reject) => {
         if (WEBRTC.ws) {
           // Already connected
+          console.warn('Already connected to lobby');
           resolve();
         }
         const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -245,19 +247,29 @@ const libraryWEBRTC = {
   },
 
   webrtc_create_server__deps: ['$Asyncify'],
-  webrtc_create_server: function (serverName, maxPlayers, buffer, len) {
+  webrtc_create_server: function (serverName, maxPlayers, password, buffer, len) {
     return Asyncify.handleSleep(async wakeup => {
       WEBRTC.reset('server');
+      WEBRTC.serverPassword = password ? UTF8ToString(password) : null;
 
       const serverHandler = message => {
         if (message.type === 'newClient') {
           if (WEBRTC.peerSlotsAvailable()) {
-            WEBRTC.send({
-              type: 'acceptJoin',
-              gameId: WEBRTC.gameId,
-              clientId: message.clientId
-            });
-            WEBRTC.startWebrtcNegotiation(message.clientId);
+            if (WEBRTC.serverPassword === message.password) {
+              WEBRTC.send({
+                type: 'acceptJoin',
+                gameId: WEBRTC.gameId,
+                clientId: message.clientId
+              });
+              WEBRTC.startWebrtcNegotiation(message.clientId);
+            } else {
+              WEBRTC.send({
+                type: 'rejectJoin',
+                gameId: WEBRTC.gameId,
+                clientId: message.clientId,
+                reason: 'Wrong password',
+              });
+            }
           } else {
             WEBRTC.send({
               type: 'rejectJoin',
@@ -282,7 +294,8 @@ const libraryWEBRTC = {
         WEBRTC.send({
           type: 'createGame',
           serverName: UTF8ToString(serverName),
-          maxPlayers
+          maxPlayers,
+          requiresPassword: WEBRTC.serverPassword ? true : false
         });
 
         const message = await WEBRTC.waitForMessage('gameCreated');
@@ -304,14 +317,17 @@ const libraryWEBRTC = {
   },
 
   webrtc_update_server__deps: ['$Asyncify'],
-  webrtc_update_server: function (serverName, playerAmount, maxPlayers) {
+  webrtc_update_server: function (serverName, playerAmount, maxPlayers, password) {
+    WEBRTC.serverPassword = password ? UTF8ToString(password) : null;
+
     return Asyncify.handleSleep(async wakeup => {
       try {
         WEBRTC.send({
           type: 'updateGameInfo',
           serverName: UTF8ToString(serverName),
           playerAmount,
-          maxPlayers
+          maxPlayers,
+          requiresPassword: WEBRTC.serverPassword ? true : false
         });
         wakeup(0);
       } catch (_err) {
@@ -329,35 +345,66 @@ const libraryWEBRTC = {
   },
 
   webrtc_connect_to_server__deps: ['$Asyncify'],
-  webrtc_connect_to_server: function (gameIdPtr) {
+  webrtc_connect_to_server: function (gameIdPtr, password) {
     return Asyncify.handleSleep(async wakeup => {
       const gameId = UTF8ToString(gameIdPtr);
       WEBRTC.reset('client');
 
       try {
         console.log('Joining game', gameId);
-        WEBRTC.send({ type: 'joinGame', gameId });
+        WEBRTC.send({
+          type: 'joinGame',
+          gameId,
+          password: password ? UTF8ToString(password) : undefined
+        });
 
-        await WEBRTC.waitForMessage('acceptJoin')
-        WEBRTC.startWebrtcNegotiation();
+        const joinResult = await WEBRTC.waitForMessage(['acceptJoin', 'rejectJoin']);
 
-        while (true) {
-          const message = await WEBRTC.waitForMessage([
-            'webrtcSignaling',
-            'connected',
-          ])
+        switch (joinResult.type) {
+          case 'acceptJoin':
+            WEBRTC.startWebrtcNegotiation();
 
-          if (message.type === 'webrtcSignaling') {
-            WEBRTC.handleWebrtcSignaling(message)
-          } else if (message.type === 'connected') {
+            while (true) {
+              const message = await WEBRTC.waitForMessage([
+                'webrtcSignaling',
+                'connected',
+              ])
+
+              if (message.type === 'webrtcSignaling') {
+                WEBRTC.handleWebrtcSignaling(message)
+              } else if (message.type === 'connected') {
+                break;
+              }
+            }
+            wakeup(0);
             break;
-          }
+          case 'rejectJoin':
+            switch(joinResult.reason)
+            {
+              case 'Game is full':
+                wakeup(4);
+                break;
+              case 'Wrong password':
+                wakeup(5);
+                break;
+            default:
+              console.error(`Unknown rejection reason while joining game: ${joinResult.reason}`);
+              wakeup(3);
+              break;
+            }
+            break;
+          default:
+            console.error(`Error message while joining game: ${joinResult.type}`);
+            wakeup(2);
+            break;
         }
-        wakeup(0);
       } catch (err) {
         console.error('Error joining game');
         wakeup(1);
       }
+
+      if (WEBRTC.ws) WEBRTC.ws.close();
+      WEBRTC.ws = null;
     })
   },
 
@@ -365,7 +412,7 @@ const libraryWEBRTC = {
   webrtc_get_server_list: function (buffer, len) {
     const get_server_list_string = function (obj) {
       return obj.map(server =>
-        `${server.gameId};${server.serverName};${server.playerAmount};${server.maxPlayers}`)
+        `${server.gameId};${server.serverName};${server.playerAmount};${server.maxPlayers};${server.requiresPassword}`)
         .join('|');
     };
 

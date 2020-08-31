@@ -7,12 +7,13 @@ extern "C" {
     extern int webrtc_init(const char *lobby_host, unsigned int max_peers);
     extern void webrtc_deinit();
     extern int webrtc_create_server(const char *server_name, unsigned int max_players,
+                                    const char* password,
                                     char *out_game_id, size_t len);
     extern int webrtc_update_server(const char *server_name, unsigned int player_amount,
-                                    unsigned int max_players);
+                                    unsigned int max_players, const char* password);
     extern int webrtc_is_server();
     extern int webrtc_connect_to_lobby();
-    extern int webrtc_connect_to_server(const char *game_id);
+    extern int webrtc_connect_to_server(const char *game_id, const char* password);
     extern int webrtc_get_server_list(char *out_server_info, size_t len);
     extern int webrtc_is_connected();
     extern int webrtc_has_peer(unsigned int peer_index);
@@ -70,25 +71,21 @@ bool send(Identifier identifier, const Buffer& buffer)
     return true;
 }
 
-int server::create_server(const char *server_name, unsigned int max_players, Port port)
+int server::create_server(const char *server_name, unsigned int max_players, Port port, const char* password)
 {
     static char game_id[20];
 
-    int ret = webrtc_create_server(server_name, max_players, game_id, sizeof(game_id));
+    int ret = webrtc_create_server(server_name, max_players, password, game_id, sizeof(game_id));
     if (ret)
     {
-        printf("Failed to connect to lobby at " TK_LOBBY_HOST "\n");
-    }
-    else
-    {
-        printf("Game created with id %s\n", game_id);
+        printf("Failed to connect a server\n");
     }
     return ret;
 }
 
-int server::update_server(const char *server_name, unsigned int player_amount, unsigned int max_players)
+int server::update_server(const char *server_name, unsigned int player_amount, unsigned int max_players, const char* password)
 {
-    int ret = webrtc_update_server(server_name, player_amount, max_players);
+    int ret = webrtc_update_server(server_name, player_amount, max_players, password);
     if (ret)
     {
         printf("Failed to update server info\n");
@@ -106,7 +103,7 @@ int connect_to_lobby()
     int ret = webrtc_connect_to_lobby();
     if (ret != 0)
     {
-        printf("Unable to connect to lobby\n");
+        printf("Failed to connect to lobby at " TK_LOBBY_HOST "\n");
     }
     return ret;
 }
@@ -136,14 +133,9 @@ ServerInfos client::get_server_list()
     return server_infos;
 }
 
-int client::connect_to_server(const char* server_address, Port port)
+ServerConnectResult client::connect_to_server(const char* server_address, Port port, const char* password)
 {
-    int ret = webrtc_connect_to_server(server_address);
-    if (ret != 0)
-    {
-        printf("Unable to connect to game host\n");
-    }
-    return ret;
+    return (ServerConnectResult) webrtc_connect_to_server(server_address, password);
 }
 
 void close_connections()

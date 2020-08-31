@@ -1225,7 +1225,10 @@ void sendipxnow( struct nodeaddr *node, int type, ... )
                               else message_board.add_message((char*)"Player NOT accepted...");
 #if defined(TK_PORT_EMCC)
                             // Player gets enabled when it sends its first keep-alive, hence +1 at this point
-                            tk_port::net::update_server(servername, player_amount()+1, MAX_PLAYERS);
+                            tk_port::net::update_server( servername,
+                                                         player_amount()+1,
+                                                         MAX_PLAYERS,
+                                                         strlen( server_password ) ? server_password : NULL );
 #endif
                             break;
         case IPX_LEVELINFO: snd->data[a++]=(char)type;
@@ -1458,20 +1461,23 @@ static const char* prompt_server_address()
 
 void setup_ipx()
 {
-#if defined(TK_PORT_EMCC)
-    if ( tk_port::net::connect_to_lobby() )
-    {
-        error("Couldn't connect to lobby\n");
-    }
-#endif
-
     int a;
     for ( a = 0; a < MAX_PLAYERS; a ++  ) ipxofs[a] = 0;
     if ( NETWORK_MODE == SERVER )
     {
+#if defined(TK_PORT_EMCC)
+        if ( tk_port::net::connect_to_lobby() )
+        {
+            error("Couldn't connect to lobby\n");
+        }
+#endif
         strcpy( servername, name1 );
         serveraddr.node = 0;
-        if ( tk_port::net::create_server(servername, MAX_PLAYERS, port) )
+        if ( tk_port::net::create_server( servername, MAX_PLAYERS, port
+#if defined(TK_PORT_EMCC)
+             , strlen( server_password ) ? server_password : NULL
+#endif
+            ) )
         {
             error("Couldn't create a server (%u)\n", port);
         }
@@ -2268,14 +2274,18 @@ int join_server(struct nodeaddr n)
 
 int select_server()
 {
-    int a, c, first=1,done=0,cnt=0,oclock=0;
+#if defined(TK_PORT_EMCC)
+    begin:
+#endif
+
+    int a, first=1,done=0,cnt=0,oclock=0;
 #if !defined(TK_PORT_EMCC)
-    int b, d,data,ofs;
+    int b, c, d,data,ofs;
 #endif
     int select=0;
     int chg=1;
     int servers=0;
-    char servernames[10][16] = {{0}};
+    char servernames[10][21] = {{0}};
 #if !defined(TK_PORT_EMCC)
     char tempname[10];
     struct nodeaddr tempnode;
@@ -2295,29 +2305,49 @@ int select_server()
     i::clear(k::ENTER);
     bc=tk_port::net::BROADCAST();
 
+#if defined(TK_PORT_EMCC)
+    if ( tk_port::net::connect_to_lobby() )
+    {
+        error("Couldn't connect to lobby\n");
+    }
+#endif
+
     while ( !done )
     {
         if (i::state(k::ENTER) && servers>0)
         {
 #if defined(TK_PORT_EMCC)
-            const bool connect_result = tk_port::net::connect_server(last_server_list[select].gameId.c_str(), port);
+            if (last_server_list[select].requiresPassword)
+            {
+                prompt_password(client_password);
+            }
+
+            tk_port::net::ServerConnectResult connect_result =
+                tk_port::net::connect_server(last_server_list[select].gameId.c_str(),
+                                             port,
+                                             strlen( client_password ) ? client_password : NULL);
+
+            strcpy(client_password, "");
+
             if ( connect_result )
             {
-                warn("Couldn't connect to server\n");
+                switch ( connect_result )
+                {
+                case tk_port::net::GAME_IS_FULL:
+                    printf("Game is full\n");
+                    break;
+                case tk_port::net::WRONG_PASSWORD:
+                    printf("Wrong password\n");
+                    break;
+                default:
+                    printf("Could not connect to server\n");
+                    break;
+                }
+                goto begin;
             }
             else
 #endif
             if (join_server(nodez[select])) done=1;
-            else
-            {
-                chg=1;
-                servers--;
-                for (c=select;c<servers;c++)
-                {
-                    memcpy(&nodez[c],&nodez[c+1],sizeof(nodeaddr));
-                    strcpy(servernames[c],servernames[c+1]);
-                }
-            }
             i::clear(k::ENTER);
         }
         if (servers>0){
@@ -2366,11 +2396,12 @@ int select_server()
                 {
                     if (last_server_list.size() > (size_t)servers && (last_server_list[servers] != server)) chg=1;
 
-                    sprintf(servernames[servers],"%s [%u/%u]",
+                    sprintf(servernames[servers],"%s%s [%u/%u]",
+                        server.requiresPassword ? "(pw) " : "",
                         server.serverName.c_str(),
                         server.playerAmount,
                         server.maxPlayers);
-                    servers++;
+                    if (++servers == 10) break;
                 }
 
                 if (last_server_list.size() != (size_t)servers) chg=1;
@@ -2465,7 +2496,10 @@ void chk_for_loosers()
         message_board.add_message(message);
         tk_port::net::disconnect(player[a].node);
 #if defined(TK_PORT_EMCC)
-        tk_port::net::update_server(servername, player_amount(), MAX_PLAYERS);
+        tk_port::net::update_server( servername,
+                                     player_amount(),
+                                     MAX_PLAYERS,
+                                     strlen( server_password ) ? server_password : NULL );
 #endif
        }
 }

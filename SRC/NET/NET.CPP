@@ -50,20 +50,20 @@ ServerInfos get_server_list()
     return transport::client::get_server_list();
 }
 
-int update_server(const char *server_name, unsigned int player_amount, unsigned int max_players)
+int update_server(const char *server_name, unsigned int player_amount, unsigned int max_players, const char* password)
 {
-    return transport::server::update_server(server_name, player_amount, max_players);
+    return transport::server::update_server(server_name, player_amount, max_players, password);
 }
 #endif
 
-int create_server(const char *server_name, unsigned int max_players, const unsigned int port)
+int create_server(const char *server_name, unsigned int max_players, const unsigned int port, const char* password)
 {
-    return transport::server::create_server(server_name, max_players, port);
+    return transport::server::create_server(server_name, max_players, port, password);
 }
 
-int connect_server(const char* server_address, const unsigned int port)
+ServerConnectResult connect_server(const char* server_address, const unsigned int port, const char* password)
 {
-    return transport::client::connect_to_server(server_address, port);
+    return transport::client::connect_to_server(server_address, port, password);
 }
 
 void close_connections()

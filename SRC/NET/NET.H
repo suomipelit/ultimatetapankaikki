@@ -1,6 +1,9 @@
 #ifndef __NET_H__
 #define __NET_H__
 
+#include <stddef.h>
+#include "SERVERCONNECTRESULT.H"
+
 #ifdef TK_PORT_EMCC
 #include "SERVERINFO.H"
 #endif
@@ -38,11 +41,15 @@ void deinit();
 #ifdef TK_PORT_EMCC
 int connect_to_lobby();
 ServerInfos get_server_list();
-int update_server(const char *server_name, unsigned int player_amount, unsigned int max_players);
+int update_server(const char *server_name, unsigned int player_amount,
+                  unsigned int max_players, const char* password = NULL);
 #endif
 
-int create_server(const char *server_name, unsigned int max_players, const unsigned int port);
-int connect_server(const char*, const unsigned int port);
+int create_server(const char *server_name, unsigned int max_players,
+                  const unsigned int port, const char* password = NULL);
+
+ServerConnectResult connect_server(const char* server_name, const unsigned int port,
+                                   const char* password = NULL);
 
 void close_connections();
 

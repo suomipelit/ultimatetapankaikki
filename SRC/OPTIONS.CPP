@@ -487,10 +487,46 @@ void sound_options()
     fadeout( virbuff, pal );
 }
 
+bool filter_password_char( char c )
+{
+    return ( 'a' <= c && c <= 'z' ) || ( '0' <= c && c <= '9' ) || c == ' ' || c == '.';
+}
+
+#if defined(TK_PORT_EMCC)
+void prompt_password( char* password )
+{
+    const char* title = "type password";
+    int x;
+    fadeout( virbuff, pal );
+    load_efp( "EFPS/COOL.EFP", picture, 0 );
+    FONT_NUM = 0;
+    x = 160 - ( str_length( title )  / 2 );
+    draw_box1( x - 10, 75, 320 - x + 10, 125, 5 );
+    memcpy( virbuff, picture, 64000 );
+    writefonts2( x, 85, title, 1 );
+    fadein( virbuff, pal );
+    i::clear_stack();
+    readline( x, 100, MAX_PASSWORD_LENGTH, password, screen, filter_password_char );
+}
+
+void server_password_field( int a, int yoffs )
+{
+    char text[32];
+    sprintf( text, "%s %s", deathmatch_opt_text[a], GAME_MODE == NETWORK && strlen(server_password) ? "on" : "off" );
+    writefonts2( 160 - ( str_length( text )  / 2 ), ( 100 - yoffs )  + ( a*15 ), text, 1 );
+}
+#endif
+
 int deathmatch_options()
 {
+    int selected = 0;
+
+#if defined(TK_PORT_EMCC)
+    begin:
+#endif
+
     int start=0;
-    int yoffs = ( 15*num_deathmatch_options )  / 2, a, cnt = 0, selected = 0, quit = 0, oclock = 0;
+    int yoffs = ( 15*num_deathmatch_options )  / 2, a, cnt = 0, quit = 0, oclock = 0;
     fadeout( virbuff, pal );
     options_scr( num_deathmatch_options, "EFPS/COOL.EFP" );
     i::clear(k::ENTER);
@@ -512,16 +548,13 @@ int deathmatch_options()
         else strcpy(deathmatch_opt_text[2],"enemies off" );
         for ( a = 0; a < num_deathmatch_options; a ++  )
         {
-            if ( a == selected )
-            {
-                FONT_NUM = 0;
-                writefonts2( 160 - ( str_length( deathmatch_opt_text[a] )  / 2 ), ( 100 - yoffs )  + ( a*15 ), deathmatch_opt_text[a], 1 );
-            }
+            FONT_NUM = a == selected ? 0 : 2;
+#if defined(TK_PORT_EMCC)
+            if (a == 3)
+                server_password_field( a, yoffs );
             else
-            {
-                FONT_NUM = 2;
+#endif
                 writefonts2( 160 - ( str_length( deathmatch_opt_text[a] )  / 2 ), ( 100 - yoffs )  + ( a*15 ), deathmatch_opt_text[a], 1 );
-            }
         }
         if ( first == 1 )
         {
@@ -543,11 +576,17 @@ int deathmatch_options()
         MIDASplaySample( samplep[KLIKWAV], MIDAS_CHANNEL_AUTO, 0, 22500, EFFECT_VOLUME, MIDAS_PAN_MIDDLE );
         if ( i::state(k::ARROW_UP) )
         {
-            selected --;if ( selected < 0 ) selected = num_deathmatch_options - 1; i::clear(k::ARROW_UP);
+            selected --;
+            if ( selected == 3 && GAME_MODE != NETWORK ) selected --;
+            if ( selected < 0 ) selected = num_deathmatch_options - 1;
+            i::clear(k::ARROW_UP);
         }
         if ( i::state(k::ARROW_DOWN) )
         {
-            selected ++;if ( selected >= num_deathmatch_options ) selected = 0; i::clear(k::ARROW_DOWN);
+            selected ++;
+            if ( selected == 3 && GAME_MODE != NETWORK ) selected ++;
+            if ( selected >= num_deathmatch_options ) selected = 0;
+            i::clear(k::ARROW_DOWN);
         }
         if ( i::state(k::ENTER) )
         {
@@ -555,7 +594,14 @@ int deathmatch_options()
             if ( selected == 0 ) { quit = 1;start = 1;}
             if ( selected == 1 ) DEATH_MATCH_SPEED = DEATH_MATCH_SPEED == 2 ? 3 : 2;
             if ( selected == 2 ) ENEMIES_ON_GAME = GAME_MODE == NETWORK || ENEMIES_ON_GAME ? 0 : 1;
-            if ( selected == 3 ) quit = 1;
+#if defined(TK_PORT_EMCC)
+            if ( selected == 3 )
+            {
+                if ( GAME_MODE == NETWORK ) prompt_password(server_password);
+                goto begin;
+            }
+#endif
+            if ( selected == (num_deathmatch_options - 1) ) quit = 1;
 
         }
         if ( i::state(k::ESC) )
