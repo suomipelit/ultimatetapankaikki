@@ -47,9 +47,6 @@ const unsigned int port = 8099;
 #include "CONFIG.H"
 
 #ifdef TK_PORT_EMCC
-// WebRTC implementation has a separate server lobby, some special functions are needed
-#include "NET/TRANSPORT/TRANSPORT.H"
-
 #define MUSIC_DIR "MUSIC_OGG/"
 #define MUSIC_EXTENSION ".OGG"
 #else
@@ -1459,7 +1456,7 @@ static const char* prompt_server_address()
 void setup_ipx()
 {
 #if defined(TK_PORT_EMCC)
-    if ( tk_port::net::transport::connect_to_lobby() )
+    if ( tk_port::net::connect_to_lobby() )
     {
         error("Couldn't connect to lobby\n");
     }
@@ -1473,7 +1470,7 @@ void setup_ipx()
         serveraddr.node = 0;
         if ( tk_port::net::create_server(servername, MAX_PLAYERS, port) )
         {
-            error("Couldn't open socket (%u)\n", port);
+            error("Couldn't create a server (%u)\n", port);
         }
     }
 #if !defined(TK_PORT_EMCC)
@@ -2283,7 +2280,7 @@ int select_server()
     struct nodeaddr nodez[10] = {{0}};
     struct nodeaddr bc;
 #if defined(TK_PORT_EMCC)
-    tk_port::net::transport::ServerInfos last_server_list;
+    tk_port::net::ServerInfos last_server_list;
     int server_list_brake = 0;
 #endif
 
@@ -2361,7 +2358,7 @@ int select_server()
             if ( !(server_list_brake++ % TARGET_FRAMES) )
             {
                 servers = 0;
-                const auto server_list = tk_port::net::transport::client::get_server_list();
+                const auto server_list = tk_port::net::get_server_list();
                 for (const auto& server : server_list)
                 {
                     if (last_server_list.size() > (size_t)servers && (last_server_list[servers] != server)) chg=1;

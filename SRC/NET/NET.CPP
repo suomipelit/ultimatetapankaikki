@@ -39,6 +39,18 @@ void deinit()
     transport::deinit();
 }
 
+#ifdef TK_PORT_EMCC
+int connect_to_lobby()
+{
+    return transport::connect_to_lobby();
+}
+
+ServerInfos get_server_list()
+{
+    return transport::client::get_server_list();
+}
+#endif
+
 int create_server(const char *server_name, unsigned int max_players, const unsigned int port)
 {
     return transport::server::create_server(server_name, max_players, port);
