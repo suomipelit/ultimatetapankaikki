@@ -580,6 +580,7 @@ int deathmatch_options()
               selected == 4 ||
 #endif
               selected == 1) && GAME_MODE != NETWORK ) selected --;
+            if ( selected == 3 && GAME_MODE == NETWORK ) selected --;
             if ( selected < 0 ) selected = num_deathmatch_options - 1;
             i::clear(k::ARROW_UP);
         }
@@ -591,6 +592,7 @@ int deathmatch_options()
               selected == 4 ||
 #endif
               selected == 1) && GAME_MODE != NETWORK ) selected ++;
+            if ( selected == 3 && GAME_MODE == NETWORK ) selected ++;
             if ( selected >= num_deathmatch_options ) selected = 0;
             i::clear(k::ARROW_DOWN);
         }
