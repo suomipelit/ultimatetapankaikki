@@ -68,6 +68,7 @@ char enemyspr6[1160*232];
 char enemyspr7[1160*232];
 char minespr[7*7];
 char name1[MAX_NAME_LENGTH], name2[MAX_NAME_LENGTH];
+char servername[MAX_NAME_LENGTH] = "";
 char client_password[MAX_PASSWORD_LENGTH] = "";
 char server_password[MAX_PASSWORD_LENGTH] = "";
 char trans_table[256][256];
@@ -422,6 +423,7 @@ char opt_text[num_options][50] =
 char deathmatch_opt_text[num_deathmatch_options][50] =
 {
     "start game",
+    "game name",
     "moving",
     "enemies",
 #if defined(TK_PORT_EMCC)

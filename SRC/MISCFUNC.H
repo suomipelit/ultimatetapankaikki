@@ -9,6 +9,7 @@
 #include "TYPES.H"
 
 void change_name( int num, bool fade_out = true );
+void change_game_name();
 char *k_2_c( const i::Input& input );
 i::Input get_key( int x, int y );
 void clear_shit( int y );

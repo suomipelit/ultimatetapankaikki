@@ -30,6 +30,7 @@ extern char wallspr[], floorspr2[], rambospr[], bodypartspr[], effectspr[];
 extern char pal[], picture[], warespr[], enemyspr0[], enemyspr1[], enemyspr2[];
 extern char enemyspr3[], enemyspr4[], enemyspr5[], enemyspr6[], enemyspr7[], minespr[];
 extern char name1[MAX_NAME_LENGTH], name2[MAX_NAME_LENGTH];
+extern char servername[MAX_NAME_LENGTH];
 extern char client_password[MAX_PASSWORD_LENGTH];
 extern char server_password[MAX_PASSWORD_LENGTH];
 extern char trans_table[256][256];

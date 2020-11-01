@@ -59,9 +59,9 @@
 #define num_game_options 4
 #define num_sound_options 3
 #if defined (__EMSCRIPTEN__)
-#define num_deathmatch_options 5
+#define num_deathmatch_options 6
 #else
-#define num_deathmatch_options 4
+#define num_deathmatch_options 5
 #endif
 #define num_multip_options 7
 #define DIFF_K 10

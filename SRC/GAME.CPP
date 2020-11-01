@@ -20,7 +20,6 @@
 int ipxofs[MAX_PLAYERS];
 char ipxstream[MAX_PLAYERS][MAXDATASIZE];
 struct nodeaddr serveraddr;
-char servername[10];
 struct packet *snd, *rec[RECEIVERS];
 
 const size_t effect_packet_divider = 4;
@@ -1471,7 +1470,9 @@ void setup_ipx()
             error("Couldn't connect to lobby\n");
         }
 #endif
-        strcpy( servername, name1 );
+        if (!strcmp( "", servername ))
+            strcpy( servername, name1 );
+
         serveraddr.node = 0;
         if ( tk_port::net::create_server( servername, MAX_PLAYERS, port
 #if defined(TK_PORT_EMCC)

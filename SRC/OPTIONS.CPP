@@ -521,9 +521,7 @@ int deathmatch_options()
 {
     int selected = 0;
 
-#if defined(TK_PORT_EMCC)
     begin:
-#endif
 
     int start=0;
     int yoffs = ( 15*num_deathmatch_options )  / 2, a, cnt = 0, quit = 0, oclock = 0;
@@ -534,8 +532,8 @@ int deathmatch_options()
     {
         memcpy( virbuff, picture, 64000 );
         if ( DEATH_MATCH_SPEED == 2 )
-             strcpy(deathmatch_opt_text[1],"normal moving");
-        else strcpy(deathmatch_opt_text[1],"fast moving");
+             strcpy(deathmatch_opt_text[2],"normal moving");
+        else strcpy(deathmatch_opt_text[2],"fast moving");
 
         // Enemies are not supported over network
         if ( GAME_MODE == NETWORK )
@@ -544,13 +542,13 @@ int deathmatch_options()
         }
 
         if ( ENEMIES_ON_GAME )
-             strcpy(deathmatch_opt_text[2],"enemies on" );
-        else strcpy(deathmatch_opt_text[2],"enemies off" );
+             strcpy(deathmatch_opt_text[3],"enemies on" );
+        else strcpy(deathmatch_opt_text[3],"enemies off" );
         for ( a = 0; a < num_deathmatch_options; a ++  )
         {
             FONT_NUM = a == selected ? 0 : 2;
 #if defined(TK_PORT_EMCC)
-            if (a == 3)
+            if (a == 4)
                 server_password_field( a, yoffs );
             else
 #endif
@@ -577,14 +575,22 @@ int deathmatch_options()
         if ( i::state(k::ARROW_UP) )
         {
             selected --;
-            if ( selected == 3 && GAME_MODE != NETWORK ) selected --;
+            if ((
+#if defined(TK_PORT_EMCC)
+              selected == 4 ||
+#endif
+              selected == 1) && GAME_MODE != NETWORK ) selected --;
             if ( selected < 0 ) selected = num_deathmatch_options - 1;
             i::clear(k::ARROW_UP);
         }
         if ( i::state(k::ARROW_DOWN) )
         {
             selected ++;
-            if ( selected == 3 && GAME_MODE != NETWORK ) selected ++;
+            if ((
+#if defined(TK_PORT_EMCC)
+              selected == 4 ||
+#endif
+              selected == 1) && GAME_MODE != NETWORK ) selected ++;
             if ( selected >= num_deathmatch_options ) selected = 0;
             i::clear(k::ARROW_DOWN);
         }
@@ -592,10 +598,11 @@ int deathmatch_options()
         {
             i::clear(k::ENTER);
             if ( selected == 0 ) { quit = 1;start = 1;}
-            if ( selected == 1 ) DEATH_MATCH_SPEED = DEATH_MATCH_SPEED == 2 ? 3 : 2;
-            if ( selected == 2 ) ENEMIES_ON_GAME = GAME_MODE == NETWORK || ENEMIES_ON_GAME ? 0 : 1;
+            if ( selected == 1 ) { change_game_name(); goto begin; }
+            if ( selected == 2 ) DEATH_MATCH_SPEED = DEATH_MATCH_SPEED == 2 ? 3 : 2;
+            if ( selected == 3 ) ENEMIES_ON_GAME = GAME_MODE == NETWORK || ENEMIES_ON_GAME ? 0 : 1;
 #if defined(TK_PORT_EMCC)
-            if ( selected == 3 )
+            if ( selected == 4 )
             {
                 if ( GAME_MODE == NETWORK ) prompt_password(server_password);
                 goto begin;

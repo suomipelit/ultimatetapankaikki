@@ -60,6 +60,22 @@ void change_name( int num, bool fade_out )
         fadeout( virbuff, pal );
 }
 
+void change_game_name()
+{
+    const char* const title = "enter game name";
+    int x;
+    fadeout(virbuff, pal);
+    load_efp("EFPS/COOL.EFP", picture, 0);
+    FONT_NUM = 0;
+    x = 160 - (str_length(title) / 2);
+    draw_box1(x - 10, 75, 320 - x + 10, 125, 5);
+    memcpy(virbuff, picture, 64000);
+    writefonts2(x, 85, title, 1);
+    fadein(virbuff, pal);
+    i::clear_stack();
+    readline(x, 100, MAX_NAME_LENGTH, servername, screen, filter_name_char);
+}
+
 /**
  * Convert an Input object into a string representing it.
  *
