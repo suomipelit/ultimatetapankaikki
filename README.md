@@ -155,6 +155,9 @@ New features:
 
 - Number of players on a server is shown on server list
 
+- Online game name can be set in multiplayer options. It defaults to
+  player name.
+
 Bugfixes:
 
 - Many memory leaks and buffer overflows have been fixed.
@@ -246,6 +249,7 @@ Releases
     - Increased network code execution frequency
     - Show number of players on server list (native port only for now)
     - Reduced keep-alive messages
+    - Add game name option to multiplayer options
 - Fixed a memory leak in sound resampling
 - Fixed minor buffer overflow with sprite loading
 - Fixed a local deathmatch crash if playing with enemies
