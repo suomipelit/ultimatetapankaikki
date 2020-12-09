@@ -1,0 +1,126 @@
+name: Build
+
+on: [push]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: ["macos-latest", "ubuntu-latest"]
+
+    runs-on: ${{matrix.os}}
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-net-dev
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install sdl2 sdl2_mixer sdl2_image sdl2_net
+    
+    - name: Configure CMake
+      run: cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
+
+    - name: Build
+      run: cmake --build .
+  
+  build-windows:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: bash
+    
+    strategy:
+      matrix:
+        include:
+          - sdl2_version: 2.0.6
+            sdl2_mixer_version: 2.0.4
+            sdl2_image_version: 2.0.4
+            sdl2_net_version: 2.0.1
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Download dependencies
+      shell: powershell
+      run: |
+        Invoke-WebRequest -Uri https://www.libsdl.org/release/SDL2-devel-${{matrix.sdl2_version}}-VC.zip -OutFile SDL2-devel-VC.zip
+        Invoke-WebRequest -Uri https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-${{matrix.sdl2_mixer_version}}-VC.zip -OutFile SDL2_mixer-devel-VC.zip
+        Invoke-WebRequest -Uri https://www.libsdl.org/projects/SDL_image/release/SDL2_image-devel-${{matrix.sdl2_image_version}}-VC.zip -OutFile SDL2_image-devel-VC.zip
+        Invoke-WebRequest -Uri https://www.libsdl.org/projects/SDL_net/release/SDL2_net-devel-${{matrix.sdl2_net_version}}-VC.zip -OutFile SDL2_net-devel-VC.zip
+        
+    - name: Extract dependencies
+      run: |
+        mkdir C:/SDL2
+        7z x SDL2-devel-VC.zip -oC:/SDL2/
+        7z x SDL2_mixer-devel-VC.zip -oC:/SDL2/
+        7z x SDL2_image-devel-VC.zip -oC:/SDL2/
+        7z x SDL2_net-devel-VC.zip -oC:/SDL2/
+      
+    - name: Configure CMake
+      env:
+        SDL2DIR: C:/SDL2/SDL2-${{matrix.sdl2_version}}
+        SDL2MIXERDIR: C:/SDL2/SDL2_mixer-${{matrix.sdl2_mixer_version}}
+        SDL2IMAGEDIR: C:/SDL2/SDL2_image-${{matrix.sdl2_image_version}}
+        SDL2NETDIR: C:/SDL2/SDL2_net-${{matrix.sdl2_net_version}}
+      run: cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE .
+
+    - name: Build
+      run: cmake --build .
+  
+  build-browser:
+    runs-on: ubuntu-latest
+    
+    env:
+      LOBBY_HOST: suomipelit-lobby.herokuapp.com
+      
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: src
+    
+    - name: Install Emscripten
+      run: |
+        git clone https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+        cd /tmp/emsdk
+        ./emsdk install latest
+        ./emsdk activate latest
+        
+    - name: Configure CMake
+      working-directory: src
+      run: cmake -DCMAKE_TOOLCHAIN_FILE=/tmp/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DTK_LOBBY_HOST=$LOBBY_HOST .
+    
+    - name: Build
+      working-directory: src
+      run: cmake --build .
+    
+    - name: Checkout GH pages repo
+      if: github.ref == 'refs/heads/master'
+      uses: actions/checkout@v2
+      with:
+        repository: suomipelit/ultimatetapankaikki-web
+        path: deploy
+        token: ${{secrets.DEPLOY_TOKEN}}
+
+    - name: Deploy
+      if: github.ref == 'refs/heads/master'
+      run: |
+        cp src/ultimatetapankaikki.html deploy/index.html
+        cp src/ultimatetapankaikki.{data,js,wasm} deploy/
+        wget -O deploy/README.md https://raw.githubusercontent.com/suomipelit/ultimatetapankaikki-web/master/README.md
+        cd deploy
+        git config --global user.email "GitHub Actions"
+        git config --global user.name "actions@github.com"
+        git commit -am "Deploy commit ${{github.sha}} of ${{github.repository}}"
+        git push
