@@ -455,7 +455,11 @@ const libraryWEBRTC = {
     for (let i = 0; i < bufferSize; i++) {
       view[i] = getValue(buffer + i, 'i8');
     }
-    peer.dataChannel.send(message);
+    try {
+      peer.dataChannel.send(message);
+    } catch (_err) {
+      return -2;
+    }
     return bufferSize;
   },
 
