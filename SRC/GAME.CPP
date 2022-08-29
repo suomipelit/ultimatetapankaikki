@@ -602,7 +602,7 @@ void chkeys()
     {
         clear_text_chat_input();
     }
-    else if ( !text_chat_active && i::state(k::ENTER) )
+    else if ( GAME_MODE == NETWORK && !text_chat_active && i::state(k::ENTER) )
     {
         text_chat_active = true;
         i::clear(k::ENTER);
