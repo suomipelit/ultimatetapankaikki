@@ -210,7 +210,7 @@ supported. You can try it live
 [here](https://suomipelit.github.io/ultimatetapankaikki-web/).
 
 ``` shell
-cmake -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=<path to>/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake .
+emcmake cmake .
 cmake --build .
 ```
 
