@@ -8,6 +8,8 @@ cmake-modules/
 CMakeCache.txt
 CMakeFiles
 CMakeScripts
+CPackConfig.cmake
+CPackSourceConfig.cmake
 CTestTestfile.cmake
 Makefile
 Testing
