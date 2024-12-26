@@ -2890,7 +2890,7 @@ void logo()
         if ( oclock != vclock())
         {
             oclock = vclock();
-            a += 10;
+            a += 50;
             setpal( pal, a );
         }
     while (i::get_last_key() == i::NOTHING && abs((int) (oclock - vclock())) < 500)
@@ -2901,7 +2901,7 @@ void logo()
         if ( oclock != vclock())
         {
             oclock = vclock();
-            a -= 10;
+            a -= 50;
             setpal( pal, a );
         }
     tk_port::event_tick();

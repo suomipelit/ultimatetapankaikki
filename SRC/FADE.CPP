@@ -26,7 +26,7 @@ void Draw_Phase( int phase, char *image, char *pal )
     setpal( pal, max( 256 - phase, 0 )  );
 }
 
-#define FADE_SPEED 10
+#define FADE_SPEED 20
 void fadein( char *image, char *pal )
 {
     unsigned int alku;
