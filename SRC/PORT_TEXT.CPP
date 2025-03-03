@@ -17,7 +17,7 @@ static uint8_t get_font_chr( char c )
 
 static void plot_pixel( int x, int y, char col )
 {
-    virbuff[(y * 320) + x] = col;
+    virbuff[(y * scr_x_size) + x] = col;
 }
 
 
@@ -144,10 +144,10 @@ int draw_text( Font *font, int x0, int y0, const char *str, int cq, TextDrawMode
                 for ( int x = x1; x < x2; x++ )
                 {
                     int px = (x - xpos1) + x0;
-                    if ( px >= 320 ) break;  // nothing to draw beyond this point
+                    if ( px >= scr_x_size ) break;  // nothing to draw beyond this point
 
                     auto col = font->glyph_data[chr][(y * font->glyph_width) + x];
-                    if ( px >= 0 && px < 320 && py >= 0 && py < scr_y_size && col != 0 )
+                    if ( px >= 0 && px < scr_x_size && py >= 0 && py < scr_y_size && col != 0 )
                     {
                         if ( mode == DrawGradientText )
                         {

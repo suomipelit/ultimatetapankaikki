@@ -9,6 +9,7 @@
 #include "ERROR/ERROR.H"
 #include "INPUT/CONTROLLERS.H"
 
+extern int scr_x_size;
 extern int scr_y_size;
 
 namespace tk_port
@@ -31,7 +32,7 @@ bool fs_mounted = false;
 
 #define TK_PORT_NSEC_PER_SEC 1000000000L
 #define TK_PORT_NSEC_PER_MSEC 1000000L
-#define TK_PORT_GRAPHICS_SCALE 3
+#define TK_PORT_GRAPHICS_SCALE 4
 
 #ifdef TK_PORT_MAC
 #include <mach/mach_time.h>
@@ -78,7 +79,7 @@ static void read_tk_port_debug()
 static void get_render_rect( SDL_Rect *rect )
 {
     int window_w, window_h;
-    const double aspect = 320.0 / scr_y_size;
+    const double aspect = double(scr_x_size) / double(scr_y_size);
 
     SDL_GetRendererOutputSize( renderer, &window_w, &window_h );
     if ( 1.0 * window_w / window_h <= aspect )
@@ -106,7 +107,7 @@ static int create_surface()
         SDL_FreeSurface(surface);
     }
 
-    surface = SDL_CreateRGBSurface( 0, 320, scr_y_size, 8, 0, 0, 0, 0 );
+    surface = SDL_CreateRGBSurface( 0, scr_x_size, scr_y_size, 8, 0, 0, 0, 0 );
 
     if ( !surface )
     {
@@ -114,9 +115,9 @@ static int create_surface()
         return 4;
     }
 
-    if ( surface->pitch != 320 )
+    if ( surface->pitch != scr_x_size )
     {
-        SDL_Log( "Was unable to get a surface with the correct linear pitch 320" );
+        SDL_Log( "Was unable to get a surface with the correct linear pitch" );
         return 5;
     }
 
@@ -128,7 +129,7 @@ static void init_screen()
     // Now that we have a linear 320x240x8 or 320x200x8 surface, assign it as our "VGA 0xA0000"
     // all other code can write into.
     screen = (char *) surface->pixels;
-    memset( screen, 0, 320 * scr_y_size );
+    memset( screen, 0, scr_x_size * scr_y_size );
 
     // I mean, the first 768 bytes of `screen` are zero...
     set_palette( screen, 0 );
@@ -194,8 +195,9 @@ void init_time()
 #endif
 }
 
-void change_resolution( const unsigned int y )
+void change_resolution( const unsigned int x, const unsigned int y )
 {
+    scr_x_size = x;
     scr_y_size = y;
 
     refresh_rendering();

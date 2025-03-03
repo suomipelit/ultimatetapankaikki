@@ -30,7 +30,7 @@ void deinit( void );
 
 void event_tick( bool draw_screen = true );
 
-void change_resolution( const unsigned int y );
+void change_resolution( const unsigned int x, const unsigned int y );
 
 void save_screenshot( const char* path );
 
